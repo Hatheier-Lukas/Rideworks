@@ -1,0 +1,10 @@
+
+{
+  "name": "rideworks-backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "resend": "^6.0.0"
+  }
+}
