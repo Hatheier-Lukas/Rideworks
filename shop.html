@@ -291,7 +291,7 @@ function drawCart(){
 $("#lines").onclick=e=>{const b=e.target.closest("button[data-k]");if(!b)return;const it=cart.find(c=>c.k===b.dataset.k);it.q+=+b.dataset.d;if(it.q<1)cart=cart.filter(c=>c!==it);drawCart();};
 $("#cartBtn").onclick=()=>$("#cartDlg").showModal();
 $("#cartClose").onclick=()=>$("#cartDlg").close();
-const ORDER_ENDPOINT="",MAIL="hatheierlukas@gmail.com",sumCart=()=>cart.reduce((a,c)=>a+c.p*c.q,0);
+const ORDER_ENDPOINT="/api/order",MAIL="hatheierlukas@gmail.com",sumCart=()=>cart.reduce((a,c)=>a+c.p*c.q,0);
 $("#checkout").onclick=()=>{
   if(!cart.length)return toast("Dein Warenkorb ist leer.");
   $("#cartDlg").close();
