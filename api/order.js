@@ -1,8 +1,6 @@
 
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 const MAIL_TO = "hatheierlukas@gmail.com";
 const MAIL_FROM =
   process.env.MAIL_FROM || "RIDEWORKS <onboarding@resend.dev>";
@@ -39,6 +37,7 @@ export default async function handler(req, res) {
   }
 
   try {
+    const resend = new Resend(process.env.RESEND_API_KEY);
     const body = req.body || {};
 
     if (clean(body.website, 50)) {
