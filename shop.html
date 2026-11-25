@@ -404,7 +404,7 @@ $("#addVar").onclick=vrow;
 $("#cancel").onclick=()=>$("#addDlg").close();
 $("#save").onclick=async()=>{
   const name=$("#pn").value.trim();
-  const variants=[...$("#vrows"].children].map(r=>({sku:r.dataset.sku||"",name:r.querySelector(".vn").value.trim(),price:parseFloat(r.querySelector(".vp").value),img:r.dataset.img||""}));
+  const variants=[...$("#vrows").children].map(r=>({sku:r.dataset.sku||"",name:r.querySelector(".vn").value.trim(),price:parseFloat(r.querySelector(".vp").value),img:r.dataset.img||""}));
   if(!name)return err("Gib dem Produkt einen Namen.");
   if(variants.some(v=>!v.name))return err("Jede Variante braucht einen Namen.");
   if(variants.some(v=>!Number.isFinite(v.price)||v.price<0))return err("Jede Variante braucht einen Preis.");
