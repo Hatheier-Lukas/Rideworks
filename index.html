@@ -55,6 +55,7 @@ h3{font:700 1.45rem/1.1 "Barlow Condensed",sans-serif;margin:0}
 .open:focus-visible::after{outline:3px solid var(--ink);outline-offset:2px;border-radius:6px}
 .cardinfo{padding:.9rem 1rem 1rem;display:flex;flex-direction:column;gap:.3rem}
 .cardinfo small{color:var(--muted)}
+.card-edit{position:relative;z-index:1;align-self:flex-start;margin-top:.5rem}
 .pd{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:1.5rem}
 .pd .tile{border:1px solid var(--line);border-radius:6px}
 .pd .info{padding:0}
@@ -341,13 +342,18 @@ function render(){
   $("#ftxt").textContent=`Passende Produkte für ${mn||"dein Moped"}: ${list.length}`;
   $("#grid").innerHTML=!list.length?"<p>Für dieses Moped gibt es noch keine Produkte.</p>":list.map(p=>{
     const many=p.variants.length>1,prices=p.variants.filter(x=>x.active!==false&&Number.isFinite(x.price)).map(x=>x.price),lo=prices.length?Math.min(...prices):null,pre=prices.length&&p.variants.some(x=>x.active!==false&&x.price!==lo)?"ab ":"";
-    return `<article class="card"><div class="tile"><img src="${esc(src(p.variants[0].img||p.variants[0].image))}" alt="${esc(p.name)}" loading="lazy"></div><div class="cardinfo"><h3><button class="open" data-open="${esc(p.id)}">${esc(p.name)}</button></h3><span class="price">${p.active!==false&&lo!==null?pre+eur(lo):"Preis folgt"}</span><small>${p.active===false||lo===null?"Noch nicht bestellbar":many?`${p.variants.length} Optionen`:""}</small></div></article>`;
+    return `<article class="card"><div class="tile"><img src="${esc(src(p.variants[0].img||p.variants[0].image))}" alt="${esc(p.name)}" loading="lazy"></div><div class="cardinfo"><h3><button class="open" data-open="${esc(p.id)}">${esc(p.name)}</button></h3><span class="price">${p.active!==false&&lo!==null?pre+eur(lo):"Preis folgt"}</span><small>${p.active===false||lo===null?"Noch nicht bestellbar":many?`${p.variants.length} Optionen`:""}</small>${admin?`<button class="ghost card-edit" type="button" data-edit="${esc(p.id)}">Bearbeiten</button>`:""}</div></article>`;
   }).join("");
   $("#feat").innerHTML=[...$("#grid").querySelectorAll(".card")].slice(0,4).map(c=>c.outerHTML).join("");
 }
 let cur=null;
 function openProduct(id){location.hash="#product/"+encodeURIComponent(id);}
-$("#grid").onclick=$("#feat").onclick=e=>{const b=e.target.closest("button[data-open]");if(b)openProduct(b.dataset.open);};
+$("#grid").onclick=$("#feat").onclick=e=>{
+  const edit=e.target.closest("button[data-edit]");
+  if(edit&&admin){const p=all().find(x=>x.id===edit.dataset.edit);if(p)openForm(p);return;}
+  const open=e.target.closest("button[data-open]");
+  if(open)openProduct(open.dataset.open);
+};
 function paintProd(){
   const p=all().find(x=>x.id===cur);if(!p)return;
   const available=p.variants.map((variant,index)=>({variant,index})).filter(({variant})=>variant.active!==false&&Number.isFinite(variant.price));
@@ -361,7 +367,7 @@ function paintProd(){
   $("#pprice").textContent=p.active!==false&&v.active!==false&&Number.isFinite(v.price)?eur(v.price):"Preis folgt";
   $("#padd").disabled=p.active===false||v.active===false||!Number.isFinite(v.price);
   $("#padd").textContent=$("#padd").disabled?"Noch nicht verfügbar":"In den Warenkorb";
-  $("#padm").hidden=!admin||backupOnly;
+  $("#padm").hidden=!admin;
   const f=p.fits||["*"];
   $("#pfit").textContent=p.fitmentConfirmed===false?"Fahrzeug-Kompatibilität nicht bestätigt – bitte vor Bestellung prüfen.":f.includes("*")?"Passt für alle Mopeds":"Passt für: "+f.map(x=>(mopeds().find(m=>m[0]===x)||[,x])[1]).join(", ");
 }
@@ -505,7 +511,7 @@ async function refreshAdmin(){
     const s=await r.json();
     admin=Boolean(s.admin);
   }catch{admin=false;}
-  $("#addBtn").hidden=!admin||backupOnly;
+  $("#addBtn").hidden=!admin;
   $("#loginBtn").textContent=admin?"Abmelden":"Anmelden";
   render();
   if(location.hash.startsWith("#product/"))route();
@@ -561,7 +567,7 @@ setAdmin();render();refreshAdmin();drawCart();route();
       backupOnly=Boolean(catalog.backupOnly||catalog.persistent===false);
       remote=catalog.products.map(p=>({id:p.id,remote:1,...p,desc:p.description||p.desc,variants:(p.variants||[]).map(v=>({name:v.name,sku:v.sku,price:v.price==null?null:Number(v.price),active:v.active!==false,img:v.image||v.img||""}))}));
       render();
-      $("#addBtn").hidden=!admin||backupOnly;
+      $("#addBtn").hidden=!admin;
       if(location.hash.startsWith("#product/"))route();
       $("#catalogNotice").textContent=catalog.notice||(backupOnly?"Datenbank nicht verfügbar; lokale Sicherung ist schreibgeschützt.":"");
     }else toast(catalog.error||"Produktkatalog konnte nicht geladen werden.");
