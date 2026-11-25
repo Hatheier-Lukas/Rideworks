@@ -3,12 +3,13 @@ import pg from "pg";
 import { loadLocalEnvironment } from "../lib/load-local-env.js";
 
 await loadLocalEnvironment(new URL("../.env.local", import.meta.url));
-if (!process.env.DATABASE_URL) {
+const databaseUrl = process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL;
+if (!databaseUrl) {
   console.error("DATABASE_URL fehlt. Migration wurde nicht ausgeführt.");
   process.exitCode = 1;
 } else {
   const pool = new pg.Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString: databaseUrl,
     ssl: process.env.DATABASE_SSL === "false" ? false : { rejectUnauthorized: true },
     max: 1
   });

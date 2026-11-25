@@ -92,30 +92,30 @@ export async function dbCatalog(pool) {
     FROM products
     ORDER BY name
   `);
-  if (!products.rows.length) {
-    const catalog = await seedCatalog();
-    for (const product of catalog.products) {
-      await upsertProduct(pool, {
-        id: product.id,
-        name: product.name,
-        description: product.description,
-        category: "",
-        brand: "",
-        fits: product.fits || [],
-        active: product.active !== false,
-        variants: (product.variants || []).map((variant) => ({
-          sku: variant.sku,
-          name: variant.name,
-          priceCents: Number.isFinite(variant.price) ? Math.round(variant.price * 100) : null,
-          compareAtCents: null,
-          stock: 0,
-          lowStock: 3,
-          active: variant.price != null,
-          image: variant.img || "",
-          deliveryTime: ""
-        }))
-      });
-    }
+  const existingIds = new Set(products.rows.map((product) => product.id));
+  const catalog = await seedCatalog();
+  for (const product of catalog.products) {
+    if (existingIds.has(product.id)) continue;
+    await upsertProduct(pool, {
+      id: product.id,
+      name: product.name,
+      description: product.description,
+      category: "",
+      brand: "",
+      fits: product.fits || [],
+      active: product.active !== false,
+      variants: (product.variants || []).map((variant) => ({
+        sku: variant.sku,
+        name: variant.name,
+        priceCents: Number.isFinite(variant.price) ? Math.round(variant.price * 100) : null,
+        compareAtCents: null,
+        stock: 0,
+        lowStock: 3,
+        active: variant.price != null,
+        image: variant.img || "",
+        deliveryTime: ""
+      }))
+    });
   }
   const result = await pool.query(`
     SELECT p.id, p.name, p.description, p.category, p.brand, p.fits, p.active,

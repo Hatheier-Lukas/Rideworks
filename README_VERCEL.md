@@ -16,6 +16,8 @@ Zurzeit werden Versand nach Österreich (€ 4,90) und Deutschland (€ 7,90), G
 
 ```sh
 npm install
+npm run build
+npm test
 ```
 
 Für den lokalen Dateimodus wird keine `DATABASE_URL` benötigt. Deployment-Variablen für Vercel aus `.env.example` gehören in die Vercel Project Settings; lokale Geheimnisse kommen in `.env.local`, die nicht eingecheckt oder in eine ZIP-Datei aufgenommen werden darf.
@@ -24,7 +26,8 @@ Umgebungsvariablen (welche davon erforderlich sind, hängt von den aktivierten F
 
 | Variable | Verwendung |
 | --- | --- |
-| `DATABASE_URL` | PostgreSQL-Verbindung für das Vercel-Deployment; lokal optional und nicht vom Dateimodus verwendet |
+| `DATABASE_URL` | Gepoolte PostgreSQL-Verbindung für Vercel; Neon liefert diese für normale App-Anfragen |
+| `DATABASE_URL_UNPOOLED` | Direkte Verbindung, wird bei Neon-Schema-Migrationen bevorzugt; lokal optional |
 | `DATABASE_SSL` | Standard ist TLS mit Zertifikatsprüfung; nur für lokale DB explizit `false` |
 | `RESEND_API_KEY` | Serverseitiger Resend-Zugang |
 | `MAIL_FROM` | Verifizierte Absenderadresse, z. B. `RIDEWORKS <shop@deine-domain.at>` |
@@ -55,7 +58,7 @@ Gib das Passwort am verborgenen Prompt ein und speichere nur die ausgegebene Has
 npm run db:migrate
 ```
 
-Die Migration legt Bestellungen, Positionen und Inventar an. Alle Lagerbestände starten aus Sicherheitsgründen bei null. Vor dem Verkauf müssen bestätigte Mengen für die Produkte manuell in der Datenbank eingetragen werden, zum Beispiel:
+Die Migration legt Bestellungen, Positionen und Inventar an. Wenn Neon beide URLs bereitstellt, nutzt sie `DATABASE_URL_UNPOOLED` für die direkte Schema-Verbindung; die App verwendet `DATABASE_URL` über einen wiederverwendbaren `pg`-Pool mit Vercel-Pool-Lifecycle-Unterstützung. Alle Lagerbestände starten aus Sicherheitsgründen bei null. Fehlende Produkte aus `products.json` werden beim ersten Datenbank-Katalogabruf ergänzt, ohne bereits vorhandene Produktdaten zu überschreiben. Vor dem Verkauf müssen bestätigte Mengen für die Produkte manuell in der Datenbank eingetragen werden, zum Beispiel:
 
 ```sql
 UPDATE inventory SET stock = 12 WHERE sku = 'RW-RELAIS-1';
