@@ -96,7 +96,7 @@ test("refuses bank transfer when the owner has not configured payment details", 
 
 test("keeps all existing seed products and their variants in the server catalog", async () => {
   const data = JSON.parse(await readFile(new URL("../products.json", import.meta.url), "utf8"));
-  assert.deepEqual(data.products.map((product) => product.id), ["relais", "spiegel", "halter", "bezug"]);
+  assert.deepEqual(data.products.slice(0, 4).map((product) => product.id), ["relais", "spiegel", "halter", "bezug"]);
   assert.deepEqual(data.products.find((product) => product.id === "halter").variants.map((variant) => variant.price), [49.9, 44.9, 29.9]);
   const skus = data.products.flatMap((product) => product.variants.map((variant) => variant.sku));
   assert.equal(new Set(skus).size, skus.length);

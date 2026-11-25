@@ -6,7 +6,7 @@ Der bestehende Katalog und die vorhandenen Produktbilder bleiben erhalten. `prod
 
 Der Bestellendpunkt akzeptiert nur Produkt-ID und SKU; Namen, Preise, Versand und Summen stammen immer vom Server. Bestellungen und Positionen werden in PostgreSQL gespeichert. Bestand wird in derselben Datenbanktransaktion geprüft und vor Annahme abgezogen; unbekannter Bestand startet bei null und wird niemals als verfügbar angenommen. Eine idempotente Bestellkennung schützt vor doppelt abgesendeten Formularen.
 
-Zurzeit werden Versand nach Österreich (€ 4,90) und Deutschland (€ 7,90), Gratisversand ab € 75 Warenwert, Vorkasse/Banküberweisung und Barzahlung ausschließlich bei Abholung unterstützt. Google-Admin-OAuth und persistente Produktänderungen sind vorbereitet. PayPal, Google-Kundenkonten, vollständiges Admin-Bestell-Dashboard, Support-Tickets, Bewertungen und weitere Shop-Workflows sind noch nicht implementiert. Nicht im Serverkatalog enthaltene Produkte werden absichtlich nicht zum Kauf angenommen, bis ihre bestätigten Preise und SKUs gepflegt sind.
+Zurzeit werden Versand nach Österreich (€ 4,90) und Deutschland (€ 7,90), Gratisversand ab € 75 Warenwert, Vorkasse/Banküberweisung und Barzahlung ausschließlich bei Abholung unterstützt. Der Admin kann sich über serverseitig bestätigtes Google-OAuth oder den per Umgebungsvariablen konfigurierten scrypt-Passwort-Login anmelden; Produktänderungen werden in PostgreSQL gespeichert. PayPal, Google-Kundenkonten, vollständiges Admin-Bestell-Dashboard, Support-Tickets, Bewertungen und weitere Shop-Workflows sind noch nicht implementiert. Nicht im Serverkatalog enthaltene Produkte werden absichtlich nicht zum Kauf angenommen, bis ihre bestätigten Preise und SKUs gepflegt sind.
 
 ## Voraussetzungen und Installation
 
@@ -21,24 +21,34 @@ npm install
 
 Lege die Umgebungsvariablen aus `.env.example` lokal oder in den Vercel Project Settings fest. `.env` bleibt lokal und darf nicht eingecheckt oder in eine ZIP-Datei aufgenommen werden.
 
-Erforderliche Variablen:
+Umgebungsvariablen (welche davon erforderlich sind, hängt von den aktivierten Funktionen ab):
 
 | Variable | Verwendung |
 | --- | --- |
-| `DATABASE_URL` | PostgreSQL-Verbindung für persistente Bestellungen und Lagerbestand |
+| `DATABASE_URL` | PostgreSQL-Verbindung für dauerhaft gespeicherte Produkte, Bestellungen und Lagerbestand |
 | `DATABASE_SSL` | Standard ist TLS mit Zertifikatsprüfung; nur für lokale DB explizit `false` |
 | `RESEND_API_KEY` | Serverseitiger Resend-Zugang |
 | `MAIL_FROM` | Verifizierte Absenderadresse, z. B. `RIDEWORKS <shop@deine-domain.at>` |
-| `GOOGLE_CLIENT_ID` | OAuth-Webclient-ID aus Google Cloud |
-| `GOOGLE_CLIENT_SECRET` | OAuth-Webclient-Geheimnis |
-| `APP_URL` | Öffentliche Shop-URL, z. B. `https://rideworks.example` |
-| `SESSION_SECRET` | Langes zufälliges Geheimnis für signierte HttpOnly-Cookies |
+| `GOOGLE_CLIENT_ID` | Optional: OAuth-Webclient-ID aus Google Cloud |
+| `GOOGLE_CLIENT_SECRET` | Optional: OAuth-Webclient-Geheimnis |
+| `APP_URL` | Optional: öffentliche Shop-URL, für Google OAuth erforderlich |
+| `SESSION_SECRET` | Erforderlich für Admin-Logins; langes zufälliges Geheimnis für signierte HttpOnly-Cookies |
+| `ADMIN_USERNAME` | Optionaler Benutzername für den Admin-Passwort-Login |
+| `ADMIN_PASSWORD_HASH` | Optionaler scrypt-Hash des Admin-Passworts, niemals das Passwort selbst |
 | `GOOGLE_ADMIN_EMAIL` | Optional; Standard ist `hatheierlukas@gmail.com` |
 | `BANK_ACCOUNT_NAME` | Kontoinhaber in den Zahlungsinformationen |
 | `BANK_IBAN` | Empfängerkonto für Vorkasse |
 | `BANK_BIC` | Optionaler BIC |
 
 `MAIL_FROM` und `RESEND_API_KEY` müssen eingerichtet sein, bevor Bestellungen akzeptiert werden. Bestätigungs- und Shop-E-Mail werden nach der Datenbanktransaktion gesendet. Scheitert der Mailversand, bleibt die Bestellung gespeichert und der Checkout zeigt die Bestellnummer plus einen klaren Fehler; die Mail darf dann manuell nachbearbeitet werden.
+
+Für den alternativen Admin-Passwort-Login ist `admin` der Standard-Benutzername (oder setze `ADMIN_USERNAME` abweichend) und generiere den Passwort-Hash in einem interaktiven Terminal:
+
+```sh
+node scripts/generate-admin-password-hash.js
+```
+
+Gib das Passwort am verborgenen Prompt ein und speichere nur die ausgegebene Hash-Zeichenfolge als `ADMIN_PASSWORD_HASH` in den Vercel-Umgebungsvariablen. Melde dich anschließend mit dem konfigurierten Nutzernamen (`admin`) oder dem in `GOOGLE_ADMIN_EMAIL` festgelegten Admin-Konto und diesem Passwort an. Das Passwort selbst gehört weder in den Quellcode noch in `.env.example`. `SESSION_SECRET` muss ebenfalls gesetzt sein. Alternativ bleibt der Google-OAuth-Login verfügbar. Der integrierte Fehlversuchs-Schutz gilt pro laufendem Prozess; für verteilte Produktionsumgebungen ist zusätzliches Rate-Limiting beim Hosting erforderlich.
 
 ## Datenbank einrichten
 
@@ -60,7 +70,7 @@ Das Repository verwendet Vercel Functions unter `api/`. Importiere es als Vercel
 
 ## Vor Produktionsfreigabe noch erforderlich
 
-1. Google OAuth-Konfiguration: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `APP_URL`, `SESSION_SECRET` und optional `GOOGLE_ADMIN_EMAIL`. Standard-Admin ist `hatheierlukas@gmail.com`. In Google Cloud muss die Callback-URL `https://<Domain>/api/auth/google/callback` als autorisierte Redirect-URI eingetragen sein. Das bestehende Frontend-Passwort wurde entfernt.
+1. Auth-Konfiguration: Für Google OAuth `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `APP_URL`, `SESSION_SECRET` und optional `GOOGLE_ADMIN_EMAIL`. Standard-Admin ist `hatheierlukas@gmail.com`. In Google Cloud muss die Callback-URL `https://<Domain>/api/auth/google/callback` als autorisierte Redirect-URI eingetragen sein. Für den Passwort-Login müssen `ADMIN_PASSWORD_HASH` und `SESSION_SECRET` gesetzt sein; `ADMIN_USERNAME` ist optional und standardmäßig `admin`.
 2. Geschütztes Admin-Dashboard für Bestellungen, Bestands-/Katalogpflege, Support und Moderation.
 3. PayPal Orders API mit serverseitiger Erfassung und Verifikation; derzeit nicht auswählbar.
 4. Persistente E-Mail-Warteschlange und Wiederholungs-/Monitoringprozess für fehlgeschlagene E-Mails.
