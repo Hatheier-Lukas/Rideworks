@@ -326,7 +326,7 @@ document.querySelector(".footer-links").addEventListener("click",event=>{
 $("#legalClose").onclick=()=>$("#legalDlg").close();
 const src=u=>{u=u&&u[0]==="@"?IMG[u.slice(1)]:u;return /^(data:image\/|\/_blob\/)/.test(u||"")||/^\/images\/[a-z0-9-]+\.(?:jpe?g|png|webp|svg)$/i.test(u||"")?u:PH;};
 const MOPEDS=[["beta-rr50","Beta RR 50"],["derbi-senda","Derbi Senda"],["rieju-mrt","Rieju MRT 50"],["aprilia-rx","Aprilia RX 50"],["aprilia-sx","Aprilia SX 50"],["yamaha-dt","Yamaha DT 50"],["yamaha-tzr","Yamaha TZR 50"],["gilera-smt","Gilera SMT 50"],["peugeot-xps","Peugeot XPS 50"],["sherco-sm","Sherco SM 50"],["ksr-tr","KSR TR 50"]];
-let remote=[],customMop=[],sel={},cart=[],db=null,admin=false,moped="",checkoutKey="";
+let remote=[],customMop=[],sel={},cart=[],db=null,admin=false,backupOnly=false,moped="",checkoutKey="";
 const mopeds=()=>[...MOPEDS,...customMop];
 const store=(k,v,sess)=>{try{const s=sess?sessionStorage:localStorage;v?s.setItem(k,v):s.removeItem(k);}catch{}};
 try{moped=localStorage.getItem("moped")||"";}catch{}
@@ -361,7 +361,7 @@ function paintProd(){
   $("#pprice").textContent=p.active!==false&&v.active!==false&&Number.isFinite(v.price)?eur(v.price):"Preis folgt";
   $("#padd").disabled=p.active===false||v.active===false||!Number.isFinite(v.price);
   $("#padd").textContent=$("#padd").disabled?"Noch nicht verfügbar":"In den Warenkorb";
-  $("#padm").hidden=!admin;
+  $("#padm").hidden=!admin||backupOnly;
   const f=p.fits||["*"];
   $("#pfit").textContent=p.fitmentConfirmed===false?"Fahrzeug-Kompatibilität nicht bestätigt – bitte vor Bestellung prüfen.":f.includes("*")?"Passt für alle Mopeds":"Passt für: "+f.map(x=>(mopeds().find(m=>m[0]===x)||[,x])[1]).join(", ");
 }
@@ -379,6 +379,7 @@ $("#pdel").onclick=async()=>{
     if(!response.ok)throw new Error(result.error||"Löschen fehlgeschlagen.");
     remote=remote.filter(x=>x.id!==cur);render();
     location.hash="#shop";
+    toast(result.backupWarning||"Produkt gelöscht.");
   }catch(error){toast(error.message||"Löschen fehlgeschlagen.");}
 };
 
@@ -468,7 +469,7 @@ async function put(id,data){
   remote=[...remote.filter(x=>x.id!==id),{id,remote:1,...data,description:data.desc,active:true}];
   render();
   if(cur===id&&location.hash.startsWith("#product/"))paintProd();
-  toast("Produkt dauerhaft gespeichert.");
+  toast(result.backupWarning||"Produkt dauerhaft gespeichert.");
 }
 function drawFits(s){$("#fits").innerHTML=[["*","Universal (alle Mopeds)"],...mopeds()].map(([id,n])=>`<label><input type="checkbox" value="${esc(id)}"${s.includes(id)?" checked":""}>${esc(n)}</label>`).join("");}
 function openForm(p){
@@ -504,7 +505,7 @@ async function refreshAdmin(){
     const s=await r.json();
     admin=Boolean(s.admin);
   }catch{admin=false;}
-  $("#addBtn").hidden=!admin;
+  $("#addBtn").hidden=!admin||backupOnly;
   $("#loginBtn").textContent=admin?"Abmelden":"Anmelden";
   render();
   if(location.hash.startsWith("#product/"))route();
@@ -557,10 +558,12 @@ setAdmin();render();refreshAdmin();drawCart();route();
     const r=await fetch("/api/products",{cache:"no-store"});
     const catalog=await r.json();
     if(r.ok&&Array.isArray(catalog.products)){
+      backupOnly=Boolean(catalog.backupOnly||catalog.persistent===false);
       remote=catalog.products.map(p=>({id:p.id,remote:1,...p,desc:p.description||p.desc,variants:(p.variants||[]).map(v=>({name:v.name,sku:v.sku,price:v.price==null?null:Number(v.price),active:v.active!==false,img:v.image||v.img||""}))}));
       render();
+      $("#addBtn").hidden=!admin||backupOnly;
       if(location.hash.startsWith("#product/"))route();
-      if(catalog.persistent===false)$("#catalogNotice").textContent=catalog.notice||"Der Katalog ist sichtbar; Änderungen werden erst nach dem Einrichten der Datenbank dauerhaft gespeichert.";
+      $("#catalogNotice").textContent=catalog.notice||(backupOnly?"Datenbank nicht verfügbar; lokale Sicherung ist schreibgeschützt.":"");
     }else toast(catalog.error||"Produktkatalog konnte nicht geladen werden.");
   }catch{toast("Produktkatalog konnte nicht geladen werden.");}
 })();

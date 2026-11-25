@@ -9,7 +9,8 @@
   },
   "scripts": {
     "test": "node --test",
-    "db:migrate": "node scripts/migrate.js"
+    "db:migrate": "node scripts/migrate.js",
+    "local": "node local-server.js"
   },
   "dependencies": {
     "google-auth-library": "^9.15.1",

@@ -1,6 +1,8 @@
 import { readdir, readFile } from "node:fs/promises";
 import pg from "pg";
+import { loadLocalEnvironment } from "../lib/load-local-env.js";
 
+await loadLocalEnvironment(new URL("../.env.local", import.meta.url));
 if (!process.env.DATABASE_URL) {
   console.error("DATABASE_URL fehlt. Migration wurde nicht ausgeführt.");
   process.exitCode = 1;

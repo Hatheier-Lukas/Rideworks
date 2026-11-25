@@ -64,6 +64,17 @@ UPDATE inventory SET stock = 12 WHERE sku = 'RW-RELAIS-1';
 
 Führe Mengen nur ein, nachdem der tatsächliche Lagerbestand verifiziert wurde. Die Bestandsverwaltung über ein geschütztes Dashboard ist noch ausstehend. Sichere die Datenbank regelmäßig und teste Wiederherstellung sowie Migrationen auf einer separaten Datenbank.
 
+## PostgreSQL als Quelle, lokales Produkt-Backup
+
+Vercel und der lokale Shop verwenden PostgreSQL als primäre Produktquelle. Der lokale Server synchronisiert erfolgreiche Datenbank-Lese- und Schreibvorgänge atomar in `products.json` als Backup auf dem Laptop. Die lokale Datei ist schreibgeschützt, wenn PostgreSQL nicht erreichbar ist; so werden Änderungen nicht fälschlich als gespeichert gemeldet.
+
+1. Lege im Projektordner eine von Git ignorierte `.env.local` an. Trage dort `DATABASE_URL` mit der vollständigen Supabase-Verbindungszeichenfolge und URL-kodiertem Datenbankpasswort ein. Für Serverless/Vercel bei Bedarf den Supabase-Pooler verwenden. Ergänze `DATABASE_SSL=true`, `ADMIN_USERNAME=admin`, `ADMIN_PASSWORD_HASH` und `SESSION_SECRET`. Für den Hash nutze `node scripts/generate-admin-password-hash.js`; für ein Sitzungsgeheimnis `node -e "console.log(require('node:crypto').randomBytes(32).toString('base64url'))"`. Zugangsdaten nicht einchecken oder teilen.
+2. Führe die Migrationen mit `npm.cmd run db:migrate` aus (Windows PowerShell; in anderen Shells `npm run db:migrate`). Das Skript liest `.env.local`.
+3. Starte den lokalen Shop mit `npm.cmd run local` und öffne `http://localhost:4173`. Produktänderungen werden zuerst in PostgreSQL gespeichert; nach Erfolg wird das lokale Backup erneuert.
+4. Vercel muss dieselbe `DATABASE_URL` sowie `SESSION_SECRET` und `ADMIN_PASSWORD_HASH` unter Production-Umgebungsvariablen haben und nach Änderungen neu deployt werden. Katalogänderungen aus lokalem Admin sind dann direkt in der Datenbank und für die öffentliche Website sichtbar.
+
+Der lokale Entwicklungsserver bindet nur an `127.0.0.1` und verarbeitet keine Bestellungen; nutze dafür den deployten Checkout samt erforderlicher Datenbank-, E-Mail- und Zahlungs-Konfiguration. `.env.local` wird von Git ignoriert und darf nicht veröffentlicht werden.
+
 ## Vercel
 
 Das Repository verwendet Vercel Functions unter `api/`. Importiere es als Vercel-Projekt, setze die oben genannten Production-Umgebungsvariablen, wende die Migration gegen die Production-Datenbank an und deploye anschließend. Vor dem Livegang sind Testbestellungen in einer getrennten Datenbank/Preview-Umgebung nötig. Lege niemals Zugangsdaten in HTML, JavaScript oder `products.json`.

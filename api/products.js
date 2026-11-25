@@ -26,7 +26,7 @@ function cleanText(value, max) {
   return value.replace(/[\r\n\t]+/g, " ").trim().slice(0, max);
 }
 
-function validateProduct(body) {
+export function validateProduct(body) {
   if (!body || typeof body !== "object") throw new Error("Produktdaten ungültig.");
   const name = cleanText(body.name, 180);
   if (!name) throw new Error("Produktname ist erforderlich.");
@@ -86,7 +86,7 @@ function validateProduct(body) {
   };
 }
 
-async function dbCatalog(pool) {
+export async function dbCatalog(pool) {
   const products = await pool.query(`
     SELECT id, name, description, category, brand, fits, active, created_at, updated_at
     FROM products
@@ -159,7 +159,7 @@ async function dbCatalog(pool) {
   return { products: [...map.values()] };
 }
 
-async function upsertProduct(pool, product) {
+export async function upsertProduct(pool, product) {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
