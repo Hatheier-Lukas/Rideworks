@@ -96,6 +96,22 @@ h3{font:700 1.45rem/1.1 "Barlow Condensed",sans-serif;margin:0}
 .relay-specs th{width:43%;padding-right:.7rem;color:#fff;font-weight:700}
 .relay-specs td{color:#b7b7b7}
 .relay-details--table-only{grid-template-columns:minmax(0,1fr)}
+.product-trust{display:flex;flex-wrap:wrap;gap:.45rem;margin:.75rem 0 0;padding:0;list-style:none}
+.product-trust li{padding:.35rem .6rem;border:1px solid var(--line);border-radius:999px;color:var(--muted);font-size:.86rem}
+.product-trust a{color:inherit;text-underline-offset:2px}
+.about{margin:2rem 0;padding:1.25rem clamp(1rem,3vw,2rem);border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+.about h2{margin:0 0 .5rem;font:700 1.8rem/1 "Barlow Condensed",sans-serif}
+.about p{max-width:70ch;color:var(--muted);margin:.4rem 0}
+.about-points{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.75rem;margin:.9rem 0 0;padding:0;list-style:none}
+.about-points li{padding:.75rem;border-left:3px solid var(--amber);background:var(--bg)}
+.category-filter{display:flex;gap:.45rem;flex-wrap:wrap;margin:0 0 1.2rem}
+.category-filter button[aria-pressed="true"]{background:var(--amber);border-color:var(--amber);color:var(--on-amber);font-weight:700}
+.shipping-note{padding:.65rem .8rem;border:1px solid var(--line);border-radius:6px;color:var(--muted);font-size:.9rem}
+.payment-badges{display:flex;gap:.4rem;flex-wrap:wrap;margin:.6rem 0;color:var(--muted);font-size:.82rem}
+.payment-badge{border:1px solid var(--line);border-radius:4px;padding:.2rem .45rem}
+.payment-badge--planned{opacity:.7;border-style:dashed}
+#legalDlg{max-height:calc(100dvh - 2rem);overflow:auto}
+#legalNote{color:var(--muted);font-size:.88rem}
 @media(max-width:767px){
   .product-page{padding:.75rem 0 1.5rem}
   .product-page .bar{align-items:stretch;gap:.75rem}
@@ -108,6 +124,7 @@ h3{font:700 1.45rem/1.1 "Barlow Condensed",sans-serif;margin:0}
   .product-page .buy .add{width:100%;min-height:48px;white-space:normal}
   .relay-details{grid-template-columns:minmax(0,1fr);padding:.85rem;gap:.85rem}
   .relay-technical{padding:1rem}
+  .about-points{grid-template-columns:1fr}
 }
 #loginDlg{width:min(440px,calc(100% - 2rem));padding:2rem;background:#0d1117;color:#f0f6fc;border-color:#30363d}
 #loginDlg input{background:#0d1117;color:#f0f6fc;border-color:#30363d}
@@ -220,13 +237,35 @@ input,textarea{width:100%;font:inherit;padding:.55rem .7rem;border:1px solid var
       <figure><a href="#product/halter" aria-label="Kennzeichenhalter ansehen"><img src="/images/halter.jpeg" alt="Kennzeichenhalter und Heckbeleuchtung" loading="lazy"></a></figure>
      </div>
     </section>
+    <section class="about" aria-labelledby="aboutTitle">
+      <h2 id="aboutTitle">Warum Rideworks?</h2>
+      <p>Ein Shop für Menschen, die selbst am Moped schrauben: verständliche Produktinfos, persönliche Hilfe und zügige Bearbeitung lagernder Artikel.</p>
+      <ul class="about-points">
+        <li><strong>Praxisnah:</strong> Von Moped-Schraubern ausgewählt und – wo produktspezifisch bestätigt – in der Praxis geprüft.</li>
+        <li><strong>Schnell bearbeitet:</strong> Lagernde Bestellungen werden zügig für den Versand vorbereitet; die konkrete Lieferzeit steht beim Produkt.</li>
+        <li><strong>Persönlicher Support:</strong> Fragen zu Anschluss und Passform? Schreib an shop.rideworks@gmail.com.</li>
+      </ul>
+    </section>
     <h2 class="sec">Wähle dein Moped</h2>
     <div class="opts" id="startMops" role="group" aria-label="Moped wählen"></div>
+    <h2 class="sec">Nach Bereich stöbern</h2>
+    <div class="category-filter" id="startCategories" role="group" aria-label="Produktbereich wählen">
+      <button class="chip" type="button" data-category="Alle" aria-pressed="true">Alle</button>
+      <button class="chip" type="button" data-category="Motor &amp; Kühlung" aria-pressed="false">Motor &amp; Kühlung</button>
+      <button class="chip" type="button" data-category="Cockpit &amp; Elektronik" aria-pressed="false">Cockpit &amp; Elektronik</button>
+      <button class="chip" type="button" data-category="Optik &amp; Zubehör" aria-pressed="false">Optik &amp; Zubehör</button>
+    </div>
     <h2 class="sec">Beliebte Produkte</h2>
     <section class="grid" id="feat" aria-label="Beliebte Produkte"></section>
   </div>
   <div id="vShop" hidden>
   <div class="bar"><h2 class="sec">Shop</h2><button class="btn" id="addBtn" hidden>Produkt hinzufügen</button></div>
+  <div class="category-filter" id="shopCategories" role="group" aria-label="Produktbereich wählen">
+    <button class="chip" type="button" data-category="Alle" aria-pressed="true">Alle</button>
+    <button class="chip" type="button" data-category="Motor &amp; Kühlung" aria-pressed="false">Motor &amp; Kühlung</button>
+    <button class="chip" type="button" data-category="Cockpit &amp; Elektronik" aria-pressed="false">Cockpit &amp; Elektronik</button>
+    <button class="chip" type="button" data-category="Optik &amp; Zubehör" aria-pressed="false">Optik &amp; Zubehör</button>
+  </div>
   <p id="catalogNotice" class="muted" role="status"></p>
   <p class="fbar" id="fbar" hidden><span id="ftxt"></span><button class="del" id="fclear">Filter entfernen</button></p>
   <section class="grid" id="grid" aria-label="Produkte"></section>
@@ -241,6 +280,7 @@ input,textarea{width:100%;font:inherit;padding:.55rem .7rem;border:1px solid var
         <p id="pfit"></p>
         <div class="opts" id="popts" role="group" aria-label="Variante wählen"></div>
         <div class="buy"><span class="price" id="pprice"></span><button class="add" id="padd">In den Warenkorb</button></div>
+        <ul class="product-trust" id="productTrust" aria-label="Bestellinformationen"></ul>
         <div class="acts adm" id="padm" hidden><button class="ghost" id="pedit">Bearbeiten</button><button class="del" id="pdel">Löschen</button></div>
       </div>
     </div>
@@ -308,7 +348,34 @@ input,textarea{width:100%;font:inherit;padding:.55rem .7rem;border:1px solid var
           </div>
         </details>
       </div>
-
+      <div class="relay-accordion" id="thermometerAccordion" hidden>
+        <details open>
+          <summary>Technische Angaben &amp; Kompatibilität</summary>
+          <div class="relay-content">
+            <p>Die Produktangaben nennen Temperaturmessung mit Sensor und rote oder blaue Displayvarianten. Die nachfolgenden Anschlussdaten können je nach Set abweichen und müssen vor Verkauf am konkreten Lieferantenartikel bestätigt werden.</p>
+            <ul class="relay-list">
+              <li>Temperaturbereich: 0–120 °C; Überhitzungswarnung nur, wenn sie bei der gewählten Ausführung enthalten ist.</li>
+              <li>Sensorvarianten: M10×1,0, 1/8″ NPT oder Zündkerzen-Ringfühler – nicht untereinander austauschbar.</li>
+              <li>Stromversorgung: CR2032-Knopfzelle oder 12-V-Anschluss, abhängig von der Ausführung.</li>
+              <li>Kabellänge ungefähr 1,2 m und spritzwassergeschützte Ausführung sind vor Freigabe am konkreten Produkt zu prüfen.</li>
+              <li>Als mögliche Fahrzeuge sind Derbi D50B0/EBE, Minarelli AM6, Rieju, Beta, Aprilia und Puch genannt. Motorcode allein garantiert keine Passform; Gewinde, Sensorart, Bordspannung und Platzverhältnisse vergleichen.</li>
+            </ul>
+          </div>
+        </details>
+        <details>
+          <summary>Lieferumfang</summary>
+          <div class="relay-content">
+            <p>Vorgesehener Lieferumfang laut Produktangabe; bitte vor Verkaufsfreigabe mit dem tatsächlich gelieferten Set abgleichen:</p>
+            <ul class="relay-list">
+              <li>Digitaldisplay</li>
+              <li>Temperatursensor inklusive Kabel</li>
+              <li>Halterung oder Klettband</li>
+              <li>Batterie, falls für die gewählte Variante vorgesehen</li>
+              <li>Anleitung</li>
+            </ul>
+          </div>
+        </details>
+      </div>
       <aside class="relay-technical" aria-labelledby="relayTechnicalHeading">
         <h3 id="relayTechnicalHeading">Technische Details</h3>
         <h4 id="relaySpecName">12V LED-Blinkrelais mit einstellbarer Geschwindigkeit</h4>
@@ -322,11 +389,21 @@ input,textarea{width:100%;font:inherit;padding:.55rem .7rem;border:1px solid var
 
 <footer class="site-footer">
   <nav class="footer-links" aria-label="Rechtliche Informationen">
-    <a href="#privacy-settings" data-legal="privacy">Datenschutzeinstellungen</a>
-    <a href="#cookie-notice" data-legal="cookies">Cookies &amp; Cookie-Hinweise</a>
     <a href="#imprint" data-legal="imprint">Impressum</a>
-    <a href="#returns-warranty" data-legal="returns">Rückgabe &amp; Gewährleistung</a>
+    <a href="#terms" data-legal="terms">AGB</a>
+    <a href="#privacy" data-legal="privacy">Datenschutz</a>
+    <a href="#withdrawal" data-legal="withdrawal">Widerrufsrecht</a>
+    <a href="#contact" data-legal="contact">Kontakt</a>
+    <a href="#privacy-settings" data-legal="privacy-settings">Cookie-Einstellungen</a>
   </nav>
+  <p class="shipping-note">Versand: 4,90 € nach Österreich und Deutschland · kostenlos ab 50 € Bestellwert.</p>
+  <div class="payment-badges" aria-label="Zahlungsarten">
+    <span class="payment-badge">Vorkasse · verfügbar</span>
+    <span class="payment-badge">Bar bei Abholung · verfügbar</span>
+    <span class="payment-badge payment-badge--planned" title="Derzeit nicht im Checkout verfügbar">PayPal · noch nicht verfügbar</span>
+    <span class="payment-badge payment-badge--planned" title="Derzeit nicht im Checkout verfügbar">Klarna · noch nicht verfügbar</span>
+    <span class="payment-badge payment-badge--planned" title="Derzeit nicht im Checkout verfügbar">Kreditkarte · noch nicht verfügbar</span>
+  </div>
   <p class="footer-copy">© Lukas Hatheier</p>
 </footer>
 
@@ -334,6 +411,14 @@ input,textarea{width:100%;font:inherit;padding:.55rem .7rem;border:1px solid var
   <h2 id="ct">Warenkorb</h2>
   <div id="lines"></div>
   <div class="total"><span>Summe</span><span id="sum"></span></div>
+  <p class="shipping-note">Versand 4,90 € nach Österreich und Deutschland, ab 50 € Warenwert kostenlos. Barzahlung ist nur bei Abholung möglich.</p>
+  <div class="payment-badges" aria-label="Zahlungsarten">
+    <span class="payment-badge">Vorkasse</span>
+    <span class="payment-badge">Bar bei Abholung</span>
+    <span class="payment-badge payment-badge--planned">PayPal · noch nicht verfügbar</span>
+    <span class="payment-badge payment-badge--planned">Klarna · noch nicht verfügbar</span>
+    <span class="payment-badge payment-badge--planned">Kreditkarte · noch nicht verfügbar</span>
+  </div>
   <div class="acts"><button class="ghost" id="cartClose">Schließen</button><button class="btn" id="checkout">Zur Kasse</button></div>
 </dialog>
 
@@ -383,6 +468,12 @@ input,textarea{width:100%;font:inherit;padding:.55rem .7rem;border:1px solid var
   <label>Lieferung<select id="delivery"><option value="shipping">Versand</option><option value="pickup">Abholung</option></select></label>
   <label>Zahlungsart<select id="payment"><option value="bank_transfer">Vorkasse / Banküberweisung</option><option value="cash_pickup">Barzahlung bei Abholung</option></select></label>
   <p id="shippingHint" aria-live="polite"></p>
+  <div class="payment-badges" aria-label="Verfügbare Zahlungsarten">
+    <span class="payment-badge">Vorkasse</span><span class="payment-badge">Bar bei Abholung</span>
+    <span class="payment-badge payment-badge--planned">PayPal · nicht verfügbar</span>
+    <span class="payment-badge payment-badge--planned">Klarna · nicht verfügbar</span>
+    <span class="payment-badge payment-badge--planned">Kreditkarte · nicht verfügbar</span>
+  </div>
   <label>Anmerkung (optional)<textarea id="cm" rows="2"></textarea></label>
   <p id="coErr" role="alert"></p>
   <input id="hp" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px">
@@ -414,6 +505,7 @@ input,textarea{width:100%;font:inherit;padding:.55rem .7rem;border:1px solid var
 <dialog id="legalDlg" aria-labelledby="legalTitle">
   <h2 id="legalTitle"></h2>
   <p id="legalText"></p>
+  <p id="legalNote" hidden></p>
   <div class="acts"><button class="ghost" type="button" id="legalClose">Schließen</button></div>
 </dialog>
 <div class="toast" id="toast" role="status" popover="manual"></div>
@@ -446,12 +538,99 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const eur=n=>new Intl.NumberFormat("de-AT",{style:"currency",currency:"EUR"}).format(n);
 const legalInfo={
-  privacy:["Datenschutzeinstellungen","Derzeit sind keine optionalen Analyse- oder Marketing-Cookies eingebunden. Für die sichere Admin-Anmeldung wird ein notwendiges HttpOnly-Session-Cookie verwendet. Die Mopedauswahl wird lokal im Browser gespeichert. Es gibt aktuell keine optionalen Cookie-Kategorien, die hier aktiviert oder deaktiviert werden könnten."],
+  "privacy-settings":["Datenschutzeinstellungen","Derzeit sind keine optionalen Analyse- oder Marketing-Cookies eingebunden. Für die sichere Admin-Anmeldung wird ein notwendiges HttpOnly-Session-Cookie verwendet. Die Mopedauswahl wird lokal im Browser gespeichert. Es gibt aktuell keine optionalen Cookie-Kategorien, die hier aktiviert oder deaktiviert werden könnten."],
   cookies:["Cookies & Cookie-Hinweise","Rideworks verwendet notwendige Session-Cookies für die Admin-Anmeldung und den geschützten OAuth-Anmeldevorgang. Die gewählte Mopedauswahl wird lokal im Browser (localStorage) gespeichert und ist kein Cookie. Analyse- oder Werbe-Cookies sind derzeit nicht eingebunden."],
-  imprint:["Impressum","Die vollständigen Betreiberangaben sind noch nicht hinterlegt. Vor Veröffentlichung müssen insbesondere vollständiger Name bzw. Firma, Rechtsform, ladungsfähige Anschrift und Kontaktangaben sowie – sofern vorhanden bzw. erforderlich – Firmenbuch- und UID-Daten ergänzt werden. Es wurden keine Unternehmensdaten erfunden."],
-  returns:["Rückgabe & Gewährleistung","Die verbindlichen Rückgabe-, Widerrufs- und Gewährleistungsinformationen sind noch nicht hinterlegt. Sie müssen vor dem Verkauf für das Unternehmen und die angebotenen Produkte rechtlich geprüft und ergänzt werden."]
+  imprint:["Impressum",`Informationspflicht laut § 5 E-Commerce Gesetz (ECG), § 14 Unternehmensgesetzbuch (UGB), § 63 Gewerbeordnung (GewO) und Offenlegungspflicht laut § 25 Mediengesetz (MedienG).
+
+Rideworks
+Inhaber: Lukas Hatheier
+[Deine Straße und Hausnummer]
+[Deine Postleitzahl] [Dein Ort]
+Österreich
+
+Kontakt:
+Telefon: [Deine Telefonnummer]
+E-Mail: [Deine Shop-E-Mail-Adresse, z. B. kontakt@rideworks.at]
+Website: https://rideworks.vercel.app
+
+Unternehmensgegenstand:
+Handel mit Moped-Ersatzteilen und Zubehör
+
+Gewerbebehörde / Bezirkshauptmannschaft: [z. B. Bezirkshauptmannschaft Wels-Land]
+Mitglied der Wirtschaftskammer: [z. B. WKO Oberösterreich, Landesgremium Fahrzeughandel]
+Berufsrecht: Gewerbeordnung (www.ris.bka.gv.at)
+
+Online-Streitbeilegung (OS):
+Verbraucher haben die Möglichkeit, Beschwerden an die Online-Streitbeilegungsplattform der EU zu richten: https://ec.europa.eu/consumers/odr
+Unsere E-Mail-Adresse finden Sie oben im Impressum.
+Wir sind nicht verpflichtet und nicht bereit, an einem Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.
+
+Haftung für Inhalte & Links:
+Alle Inhalte dieses Online-Shops wurden sorgfältig geprüft. Für die Richtigkeit, Vollständigkeit und Aktualität der Inhalte können wir jedoch keine Gewähr übernehmen. Trotz sorgfältiger inhaltlicher Kontrolle übernehmen wir keine Haftung für die Inhalte externer Links; für den Inhalt verlinkter Seiten sind ausschließlich deren Betreiber verantwortlich.
+
+Urheberrecht:
+Die auf dieser Website erstellten Inhalte, Produkttexte, Grafiken und Fotos unterliegen dem österreichischen Urheberrecht. Eine Vervielfältigung oder Verwendung ohne ausdrückliche schriftliche Zustimmung ist nicht gestattet.`,`Die gelieferte Musterfassung enthält Platzhalter, die vor Veröffentlichung ersetzt werden müssen. Die Angabe zur EU-Online-Streitbeilegungsplattform muss auf Aktualität geprüft werden.`],
+  terms:["AGB – Muster für Österreich",`Allgemeine Geschäftsbedingungen – Muster
+
+1. Anbieter
+Rideworks, Inhaber Lukas Hatheier. Vollständige Anschrift und Kontaktdaten sind im Impressum zu ergänzen.
+
+2. Geltungsbereich und Angebot
+Diese Musterbedingungen gelten für Bestellungen von Verbraucherinnen und Verbrauchern im Rideworks-Onlineshop. Produktdarstellungen sind eine Einladung zur Bestellung. Technische Eigenschaften und Fahrzeugkompatibilität sind vor Bestellung anhand der jeweiligen Produktangaben zu prüfen.
+
+3. Bestellung und Vertrag
+Mit dem Absenden einer Bestellung gibst du ein verbindliches Angebot ab. Der Vertrag kommt erst mit einer ausdrücklichen Annahme durch Rideworks zustande. Bestellbestätigung, Verfügbarkeit und Lieferzeit müssen für den tatsächlichen Geschäftsablauf angepasst werden.
+
+4. Preise und Zahlung
+Alle im Shop angezeigten Preise verstehen sich in Euro. Ob Umsatzsteuer enthalten ist oder aufgrund einer Kleinunternehmerregelung nicht ausgewiesen wird, muss der Betreiber vor Veröffentlichung ergänzen. Aktuell verfügbare Zahlarten sind Vorkasse/Banküberweisung und Barzahlung ausschließlich bei Abholung. PayPal, Klarna und Kreditkarte sind derzeit nicht verfügbar.
+
+5. Versand und Abholung
+Derzeit ist Versand nach Österreich und Deutschland vorgesehen. Die im Checkout ausgewiesenen Kosten betragen 4,90 € je Bestellung; ab 50,00 € Warenwert ist der Versand kostenlos. Abholung ist nur nach gesonderter Vereinbarung möglich. Liefergebiet, Lieferzeiten und Verfügbarkeit sind vor dem Livebetrieb zu bestätigen.
+
+6. Widerruf und Gewährleistung
+Verbraucherinnen und Verbraucher haben grundsätzlich ein gesetzliches Widerrufsrecht. Einzelheiten stehen in der Widerrufsbelehrung. Die gesetzlichen Gewährleistungsrechte bleiben unberührt.
+
+7. Recht und Streitbeilegung
+Es gelten die zwingenden Verbraucherschutzbestimmungen. Diese Muster-AGB ersetzen keine rechtliche Prüfung und müssen vor Verwendung an den Betrieb angepasst werden.`,`Mustertext – vor Veröffentlichung rechtlich prüfen und Platzhalter/Steuerangaben vervollständigen.`],
+  privacy:["Datenschutzerklärung – Muster",`Verantwortlicher
+Rideworks, Inhaber Lukas Hatheier. Anschrift und Kontakt des Verantwortlichen müssen vor Veröffentlichung im Impressum vollständig ergänzt werden.
+
+Verarbeitete Daten und Zwecke
+Bei einer Bestellung werden insbesondere Name, E-Mail-Adresse, gegebenenfalls Telefonnummer, Lieferanschrift, Bestellpositionen und Zahlungs-/Versandangaben zur Abwicklung, Kundenkommunikation und Erfüllung gesetzlicher Pflichten verarbeitet. Produktwahl und Warenkorb werden lokal im Browser gespeichert, soweit die Shopfunktion dies benötigt. Für die Admin-Anmeldung werden notwendige Sitzungsdaten in einem geschützten Cookie verarbeitet.
+
+Rechtsgrundlagen und Empfänger
+Die Verarbeitung erfolgt, soweit einschlägig, zur Vertragserfüllung, aufgrund gesetzlicher Pflichten oder auf Grundlage berechtigter Interessen an einem sicheren Shopbetrieb. Technische Dienstleister für Hosting, Datenbank und E-Mail können Daten im erforderlichen Umfang erhalten; die konkreten Anbieter, Auftragsverarbeitungsverträge und Speicherorte sind vor Veröffentlichung anhand der tatsächlichen Konfiguration zu ergänzen.
+
+Speicherdauer und Rechte
+Bestell- und Rechnungsdaten werden nur so lange gespeichert, wie es für Vertrag, gesetzliche Aufbewahrungspflichten und Rechtsansprüche erforderlich ist. Betroffene Personen haben nach Maßgabe der DSGVO Rechte auf Auskunft, Berichtigung, Löschung, Einschränkung, Datenübertragbarkeit und Widerspruch sowie das Recht auf Beschwerde bei der österreichischen Datenschutzbehörde.
+
+Cookies
+Derzeit sind keine Analyse- oder Marketing-Cookies vorgesehen. Notwendige Admin-Sitzungscookies und die lokale Speicherung der Mopedauswahl dienen der Funktionalität.`,`Mustertext – konkrete Datenflüsse, Anbieter, Aufbewahrungsfristen und Rechtsgrundlagen vor Veröffentlichung datenschutzrechtlich prüfen.`],
+  withdrawal:["Widerrufsrecht – Muster für Österreich",`Widerrufsbelehrung
+
+Verbraucherinnen und Verbraucher können einen im Fernabsatz geschlossenen Vertrag grundsätzlich binnen 14 Tagen ohne Angabe von Gründen widerrufen. Die Frist beginnt bei Waren mit dem Tag, an dem die Ware in Besitz genommen wurde. Zur Ausübung des Widerrufs ist Rideworks mittels eindeutiger Erklärung über den Widerruf zu informieren.
+
+Empfänger:
+Rideworks, Inhaber Lukas Hatheier
+[Deine Straße und Hausnummer]
+[Deine Postleitzahl] [Dein Ort], Österreich
+E-Mail: [Deine Shop-E-Mail-Adresse]
+
+Folgen des Widerrufs
+Nach Eingang des Widerrufs werden geleistete Zahlungen im gesetzlichen Umfang zurückerstattet. Die Rücksendung, Fristen, zulässige Abzüge und etwaige Ausnahmen richten sich nach den anwendbaren gesetzlichen Bestimmungen und müssen für den konkreten Shop rechtlich ergänzt werden.
+
+Muster-Widerrufsformular
+An Rideworks, [vollständige Anschrift und E-Mail-Adresse]:
+Hiermit widerrufe ich den von mir abgeschlossenen Vertrag über den Kauf der folgenden Waren:
+Bestellt am / erhalten am:
+Name der Verbraucherin/des Verbrauchers:
+Anschrift:
+Unterschrift (nur bei Mitteilung auf Papier):
+Datum:`,`Mustertext – Rücksendeadresse, Kostenregelung, Ausnahmen und Belehrung vor Livegang rechtlich prüfen.`],
+  contact:["Kontakt","Rideworks\nE-Mail: shop.rideworks@gmail.com\nWebsite: https://rideworks.vercel.app\n\nBitte ergänze vor Veröffentlichung eine ladungsfähige Anschrift und – falls angeboten – eine Telefonnummer."],
+  returns:["Rückgabe & Gewährleistung","Für Verbraucher gilt das gesetzliche Widerrufsrecht; Details stehen unter „Widerrufsrecht“. Die gesetzlichen Gewährleistungsrechte bleiben unberührt. Die konkreten Rücksende- und Reklamationsangaben müssen vor dem Verkauf ergänzt und rechtlich geprüft werden."]
 };
-document.querySelector(".footer-links").addEventListener("click",event=>{
+document.addEventListener("click",event=>{
   const link=event.target.closest("a[data-legal]");
   if(!link)return;
   event.preventDefault();
@@ -459,6 +638,8 @@ document.querySelector(".footer-links").addEventListener("click",event=>{
   if(!details)return;
   $("#legalTitle").textContent=details[0];
   $("#legalText").textContent=details[1];
+  $("#legalNote").textContent=details[2]||"";
+  $("#legalNote").hidden=!details[2];
   $("#legalDlg").showModal();
 });
 $("#legalClose").onclick=()=>$("#legalDlg").close();
@@ -481,20 +662,32 @@ const TECHNICAL_META={
   "chain-brush":{type:"Kettenreinigungsbürste",area:"Pflege / Wartung"},
   "tie-down-straps":{type:"Spanngurte",area:"Transport / Ladungssicherung"}
 };
-let remote=[],customMop=[],sel={},cart=[],db=null,admin=false,backupOnly=false,localWritable=false,moped="",checkoutKey="";
+let remote=[],customMop=[],sel={},cart=[],db=null,admin=false,backupOnly=false,localWritable=false,moped="",checkoutKey="",browseCategory="Alle";
 const mopeds=()=>[...MOPEDS,...customMop];
 const store=(k,v,sess)=>{try{const s=sess?sessionStorage:localStorage;v?s.setItem(k,v):s.removeItem(k);}catch{}};
 try{moped=localStorage.getItem("moped")||"";}catch{}
 const all=()=>{const m=new Map(SEED.map(p=>[p.id,p]));remote.forEach(p=>m.set(p.id,p));return[...m.values()].filter(p=>!p.deleted);};
 
-const shown=()=>all().filter(p=>p.fitmentConfirmed===false||!moped||(p.fits||["*"]).some(f=>f==="*"||f===moped));
+const browseCategoryFor=p=>p.browseCategory||({
+  thermometer:"Motor & Kühlung",
+  relais:"Cockpit & Elektronik",
+  "usb-charger":"Cockpit & Elektronik",
+  "usb-outlet":"Cockpit & Elektronik",
+  "phone-holder":"Cockpit & Elektronik"
+}[p.id]||"Optik & Zubehör");
+const shown=()=>all()
+  .filter(p=>p.fitmentConfirmed===false||!moped||(p.fits||["*"]).some(f=>f==="*"||f===moped))
+  .filter(p=>browseCategory==="Alle"||browseCategoryFor(p)===browseCategory);
 function render(){
   const list=shown(),mn=(mopeds().find(m=>m[0]===moped)||[])[1];
   drawMops();
+  document.querySelectorAll("[data-category]").forEach(button=>{
+    button.setAttribute("aria-pressed",String(button.dataset.category===browseCategory));
+  });
   $("#mopBtn").textContent=mn?"Mein Moped: "+mn:"Mein Moped wählen";
   $("#fbar").hidden=!moped;
   $("#ftxt").textContent=`Passende Produkte für ${mn||"dein Moped"}: ${list.length}`;
-  $("#grid").innerHTML=!list.length?"<p>Für dieses Moped gibt es noch keine Produkte.</p>":list.map(p=>{
+  $("#grid").innerHTML=!list.length?`<p>${browseCategory==="Alle"?"Für dieses Moped gibt es noch keine Produkte.":`In „${esc(browseCategory)}“ wurden keine passenden Produkte gefunden.`}</p>`:list.map(p=>{
     const many=p.variants.length>1,prices=p.variants.filter(x=>x.active!==false&&Number.isFinite(x.price)).map(x=>x.price),lo=prices.length?Math.min(...prices):null,pre=prices.length&&p.variants.some(x=>x.active!==false&&x.price!==lo)?"ab ":"";
     return `<article class="card"><div class="tile"><img src="${esc(src(p.variants[0].img||p.variants[0].image))}" alt="${esc(p.name)}" loading="lazy"></div><div class="cardinfo"><h3><button class="open" data-open="${esc(p.id)}">${esc(p.name)}</button></h3><span class="price">${p.active!==false&&lo!==null?pre+eur(lo):"Preis folgt"}</span><small>${p.active===false||lo===null?"Noch nicht bestellbar":many?`${p.variants.length} Optionen`:""}</small>${admin?`<button class="ghost card-edit" type="button" data-edit="${esc(p.id)}">Bearbeiten</button>`:""}</div></article>`;
   }).join("");
@@ -584,10 +777,10 @@ function paintProd(){
   $("#pimg").innerHTML=`<img src="${esc(src(v.img||v.image))}" alt="${esc(p.name+(many?" – "+v.name:""))}">`;
   $("#pt").textContent=p.name;$("#ptext").textContent=p.description||p.desc||"";
   $("#popts").hidden=!many;
-  $("#popts").innerHTML=p.variants.map((x,j)=>`<button class="chip" aria-pressed="${j===i}" data-i="${j}"${x.active===false||!Number.isFinite(x.price)?" disabled":""}>${esc(x.name)}${x.active!==false&&Number.isFinite(x.price)?` (${eur(x.price)})`:" – Preis folgt"}</button>`).join("");
+  $("#popts").innerHTML=p.variants.map((x,j)=>`<button class="chip" aria-pressed="${j===i}" data-i="${j}"${x.active===false||!Number.isFinite(x.price)||x.stock===0?" disabled":""}>${esc(x.name)}${x.active!==false&&Number.isFinite(x.price)?` (${eur(x.price)})`:" – Preis folgt"}</button>`).join("");
   $("#pprice").textContent=p.active!==false&&v.active!==false&&Number.isFinite(v.price)?eur(v.price):"Preis folgt";
-  $("#padd").disabled=p.active===false||v.active===false||!Number.isFinite(v.price);
-  $("#padd").textContent=$("#padd").disabled?"Noch nicht verfügbar":"In den Warenkorb";
+  $("#padd").disabled=p.active===false||v.active===false||!Number.isFinite(v.price)||v.stock===0;
+  $("#padd").textContent=v.stock===0?"Ausverkauft":$("#padd").disabled?"Noch nicht verfügbar":"In den Warenkorb";
   $("#padm").hidden=!admin;
   const f=p.fits||["*"];
   $("#pfit").textContent=p.fitmentConfirmed===false?"Fahrzeug-Kompatibilität nicht bestätigt – bitte vor Bestellung prüfen.":f.includes("*")?"Passt für alle Mopeds":"Passt für: "+f.map(x=>(mopeds().find(m=>m[0]===x)||[,x])[1]).join(", ");
@@ -595,8 +788,31 @@ function paintProd(){
   $("#relayDetails").hidden=false;
   $("#relayDetails").classList.toggle("relay-details--table-only",!showRelayContent);
   $("#relayAccordion").hidden=!showRelayContent;
+  $("#thermometerAccordion").hidden=p.id!=="thermometer";
   $("#relaySpecName").textContent=p.name;
   renderTechnicalSpecs(p,v);
+  const purchasable=p.active!==false&&v.active!==false&&Number.isFinite(v.price);
+  const stock=Number.isInteger(v.stock)?v.stock:null;
+  const deliveryTime=String(v.deliveryTime||v.delivery_time||"").trim();
+  let availability="Verfügbarkeit vor Bestellung prüfen";
+  if(!purchasable)availability="Derzeit nicht bestellbar";
+  else if(stock===0)availability="Derzeit ausverkauft";
+  else if(stock>0){
+    const lowStockThreshold=Number.isInteger(v.lowStock)&&v.lowStock>=0?v.lowStock:3;
+    availability=`Auf Lager${stock<=lowStockThreshold?` – nur noch ${stock}`:""}${deliveryTime?` · Versand ${deliveryTime}`:""}`;
+  }
+  const trust=$("#productTrust");
+  trust.replaceChildren();
+  const availabilityItem=document.createElement("li");
+  availabilityItem.textContent=availability;
+  const returnsItem=document.createElement("li");
+  const returnsLink=document.createElement("a");
+  returnsLink.href="#withdrawal";returnsLink.dataset.legal="withdrawal";
+  returnsLink.textContent="14 Tage Widerrufsrecht";
+  returnsItem.append(returnsLink);
+  const paymentItem=document.createElement("li");
+  paymentItem.textContent="Zahlung: Vorkasse oder Bar bei Abholung";
+  trust.append(availabilityItem,returnsItem,paymentItem);
 }
 $("#popts").onclick=e=>{const b=e.target.closest("button[data-i]");if(!b)return;sel[cur]=+b.dataset.i;paintProd();$("#popts").querySelector(`[data-i="${b.dataset.i}"]`)?.focus();};
 $("#padd").onclick=()=>addCart(cur);
@@ -635,9 +851,9 @@ $("#cartBtn").onclick=()=>$("#cartDlg").showModal();
 $("#cartClose").onclick=()=>$("#cartDlg").close();
 const ORDER_ENDPOINT="/api/order",sumCart=()=>cart.reduce((a,c)=>a+c.p*c.q,0);
 function updateCheckoutEstimate(){
-  const subtotal=sumCart(),country=$("#cl").value,delivery=$("#delivery").value;
-  const shipping=delivery==="pickup"||subtotal>=75?0:(country==="Deutschland"?7.9:4.9);
-  const method=delivery==="pickup"?"Abholung: keine Versandkosten.":`Versand: ${shipping?eur(shipping):"kostenfrei"} · Versandkostenfrei ab 75,00 € Warenwert.`;
+  const subtotal=sumCart(),delivery=$("#delivery").value;
+  const shipping=delivery==="pickup"||subtotal>=50?0:4.9;
+  const method=delivery==="pickup"?"Abholung: keine Versandkosten.":`Versand: ${shipping?eur(shipping):"kostenfrei"} · Versandkostenfrei ab 50,00 € Warenwert.`;
   $("#shippingHint").textContent=`${method} Voraussichtliche Summe: ${eur(subtotal+shipping)}.`;
   if(delivery==="shipping"&&$("#payment").value==="cash_pickup")$("#payment").value="bank_transfer";
   $("#payment").querySelector('[value="cash_pickup"]').disabled=delivery!=="pickup";
@@ -817,6 +1033,13 @@ $("#adminLoginForm").onsubmit=async e=>{
 };
 function drawMops(){const h=mopeds().map(([id,n])=>`<button class="chip" aria-pressed="${id===moped}" data-m="${esc(id)}">${esc(n)}</button>`).join("");$("#mopList").innerHTML=h;$("#startMops").innerHTML=h;}
 function pickMop(id){moped=id;store("moped",id);render();}
+document.querySelectorAll(".category-filter").forEach(group=>group.addEventListener("click",event=>{
+  const button=event.target.closest("button[data-category]");
+  if(!button)return;
+  browseCategory=button.dataset.category;
+  render();
+  if(group.id==="startCategories")location.hash="#shop";
+}));
 $("#mopBtn").onclick=()=>{drawMops();$("#newMop").hidden=!admin;$("#mopDlg").showModal();};
 $("#mopList").onclick=e=>{const b=e.target.closest("button[data-m]");if(!b)return;pickMop(b.dataset.m);$("#mopDlg").close();};
 $("#mAll").onclick=()=>{pickMop("");$("#mopDlg").close();};
@@ -846,7 +1069,7 @@ setAdmin();render();refreshAdmin();drawCart();route();
     if(r.ok&&Array.isArray(catalog.products)){
       localWritable=Boolean(catalog.localWritable);
       backupOnly=Boolean(catalog.backupOnly||(catalog.persistent===false&&!localWritable));
-      remote=catalog.products.map(p=>({id:p.id,remote:1,...p,desc:p.description||p.desc,variants:(p.variants||[]).map(v=>({name:v.name,sku:v.sku,price:v.price==null?null:Number(v.price),active:v.active!==false,img:v.image||v.img||""}))}));
+      remote=catalog.products.map(p=>({id:p.id,remote:1,...p,desc:p.description||p.desc,variants:(p.variants||[]).map(v=>({name:v.name,sku:v.sku,price:v.price==null?null:Number(v.price),active:v.active!==false,img:v.image||v.img||"",stock:v.stock,lowStock:v.lowStock,deliveryTime:v.deliveryTime}))}));
       render();
       $("#addBtn").hidden=!admin;
       if(location.hash.startsWith("#product/"))route();

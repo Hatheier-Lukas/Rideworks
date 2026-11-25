@@ -34,25 +34,36 @@ test("calculates shipping from catalog prices and the configured destination", (
   assert.equal(austria.shippingCents, 490);
   assert.equal(austria.totalCents, 2990);
 
-  const order = normalizeCheckout({
+  const germanyShipping = normalizeCheckout({
+    ...base,
+    paymentMethod: "bank_transfer",
+    deliveryMethod: "shipping",
+    items: [{ productId: "part", sku: "PART-1", qty: 1 }],
+    customer: { ...base.customer, country: "Deutschland" }
+  }, catalog, { BANK_ACCOUNT_NAME: "Shop", BANK_IBAN: "configured" });
+  assert.equal(germanyShipping.subtotalCents, 2500);
+  assert.equal(germanyShipping.shippingCents, 490);
+  assert.equal(germanyShipping.totalCents, 2990);
+
+  const free = normalizeCheckout({
     ...base,
     paymentMethod: "bank_transfer",
     deliveryMethod: "shipping",
     items: [{ productId: "part", sku: "PART-1", qty: 2 }],
     customer: { ...base.customer, country: "Deutschland" }
   }, catalog, { BANK_ACCOUNT_NAME: "Shop", BANK_IBAN: "configured" });
-  assert.equal(order.subtotalCents, 5000);
-  assert.equal(order.shippingCents, 790);
-  assert.equal(order.totalCents, 5790);
+  assert.equal(free.subtotalCents, 5000);
+  assert.equal(free.shippingCents, 0);
+  assert.equal(free.totalCents, 5000);
 
-  const free = normalizeCheckout({
+  const higherOrder = normalizeCheckout({
     ...base,
     paymentMethod: "bank_transfer",
     deliveryMethod: "shipping",
     items: [{ productId: "part", sku: "PART-1", qty: 3 }]
   }, catalog, { BANK_ACCOUNT_NAME: "Shop", BANK_IBAN: "configured" });
-  assert.equal(free.shippingCents, 0);
-  assert.equal(free.totalCents, 7500);
+  assert.equal(higherOrder.shippingCents, 0);
+  assert.equal(higherOrder.totalCents, 7500);
 });
 
 test("ignores client prices and rejects invalid SKU, quantity, and payment", () => {
