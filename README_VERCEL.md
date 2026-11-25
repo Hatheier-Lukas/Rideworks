@@ -78,7 +78,9 @@ Die lokale Speicherung gilt nur für den lokalen Node-Server. Vercel Functions b
 
 ## Vercel
 
-Das Repository verwendet Vercel Functions unter `api/`. Importiere es als Vercel-Projekt, setze die oben genannten Production-Umgebungsvariablen, wende die Migration gegen die Production-Datenbank an und deploye anschließend. Vor dem Livegang sind Testbestellungen in einer getrennten Datenbank/Preview-Umgebung nötig. Lege niemals Zugangsdaten in HTML, JavaScript oder `products.json`.
+Der Build kopiert die statischen Shopseiten `index.html`, `shop.html` und `images/` nach `public/`. `vercel.json` setzt diesen Ordner als Vercel Output Directory; `public/` wird beim Build erzeugt und ist deshalb in Git ignoriert. Die API-Funktionen bleiben unter `api/` und werden von Vercel separat erkannt.
+
+Importiere das Repository als Vercel-Projekt, setze die oben genannten Production-Umgebungsvariablen, wende die Migration gegen die Production-Datenbank an und deploye anschließend. Vor dem Livegang sind Testbestellungen in einer getrennten Datenbank/Preview-Umgebung nötig. Lege niemals Zugangsdaten in HTML, JavaScript oder `products.json`.
 
 ## Vor Produktionsfreigabe noch erforderlich
 

@@ -1,4 +1,4 @@
-import { readdir, readFile } from "node:fs/promises";
+import { cp, mkdir, readFile, readdir, rm } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import { extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -52,4 +52,12 @@ if (!Array.isArray(catalog.products) || catalog.products.length === 0) {
   throw new Error("products.json must contain a non-empty products array.");
 }
 
-console.log(`Static build checks passed (${sourceFiles.length} JavaScript files, ${inlineScriptCount} inline scripts, ${catalog.products.length} products).`);
+const outputDirectory = join(root, "public");
+await rm(outputDirectory, { recursive: true, force: true });
+await mkdir(outputDirectory, { recursive: true });
+for (const name of ["index.html", "shop.html"]) {
+  await cp(join(root, name), join(outputDirectory, name));
+}
+await cp(join(root, "images"), join(outputDirectory, "images"), { recursive: true });
+
+console.log(`Static build passed (${sourceFiles.length} JavaScript files, ${inlineScriptCount} inline scripts, ${catalog.products.length} products); storefront files and images copied to public/.`);
