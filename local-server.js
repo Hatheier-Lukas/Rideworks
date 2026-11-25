@@ -6,13 +6,12 @@ import { fileURLToPath } from "node:url";
 import { randomBytes } from "node:crypto";
 import { COOKIE_NAME, getSession, requireAdmin, sign } from "./lib/session.js";
 import { isValidPasswordHash, verifyPassword } from "./lib/password.js";
-import { createLocalCatalog } from "./lib/local-catalog.js";
-import { getPool } from "./lib/database.js";
-import { dbCatalog, upsertProduct, validateProduct } from "./api/products.js";
+import { createLocalStore } from "./lib/local-store.js";
+import { validateProduct } from "./api/products.js";
 import { loadLocalEnvironment } from "./lib/load-local-env.js";
 
 const root = path.dirname(fileURLToPath(import.meta.url));
-const catalog = createLocalCatalog(path.join(root, "products.json"));
+const store = createLocalStore(path.join(root, "data"), path.join(root, "products.json"));
 const port = Number(process.env.PORT || 4173);
 const MAX_BODY_BYTES = 10 * 1024 * 1024;
 const STATIC_ROOT_FILES = new Set(["index.html", "shop.html", "order.js"]);
@@ -28,16 +27,6 @@ const MIME_TYPES = {
   ".svg": "image/svg+xml",
   ".webp": "image/webp"
 };
-
-function backupProducts(products) {
-  return products.map(({ variants, ...product }) => ({
-    ...product,
-    variants: variants.map(({ image, img, ...variant }) => ({
-      ...variant,
-      img: image || img || ""
-    }))
-  }));
-}
 
 function sendJson(res, status, value, headers = {}) {
   res.writeHead(status, { "Content-Type": "application/json; charset=utf-8", ...headers });
@@ -89,34 +78,15 @@ async function handleApi(req, res, url) {
   if (url.pathname === "/api/products") {
     if (req.method === "GET") {
       try {
-        const snapshot = await dbCatalog(getPool());
-        let backupWarning = "";
-        try {
-          await catalog.replace(backupProducts(snapshot.products));
-        } catch {
-          backupWarning = " Die lokale Backup-Datei konnte nicht aktualisiert werden.";
-          console.error("Lokales Produkt-Backup konnte nicht aktualisiert werden.");
-        }
         return sendJson(res, 200, {
-          products: snapshot.products,
+          products: await store.listProducts(),
           persistent: true,
-          localBackup: true,
-          notice: `PostgreSQL ist die primäre Produktquelle; products.json ist das lokale Backup.${backupWarning}`
+          localOnly: true,
+          notice: "Produkte werden lokal in data/products.json gespeichert."
         });
-      } catch (error) {
-        console.error("PostgreSQL-Produktkatalog nicht verfügbar:", error.code || "database_error");
-        try {
-          return sendJson(res, 200, {
-            products: await catalog.list(),
-            persistent: false,
-            localWritable: true,
-            notice: "PostgreSQL ist nicht verfügbar. Änderungen werden nur lokal in products.json auf diesem Gerät gespeichert."
-          });
-        } catch {
-          return sendJson(res, 503, {
-            error: "PostgreSQL ist nicht verfügbar und das lokale Produkt-Backup konnte nicht gelesen werden."
-          });
-        }
+      } catch {
+        console.error("Lokaler Produktkatalog konnte nicht gelesen werden.");
+        return sendJson(res, 503, { error: "Lokaler Produktkatalog konnte nicht gelesen werden." });
       }
     }
 
@@ -131,61 +101,88 @@ async function handleApi(req, res, url) {
       return sendJson(res, error.statusCode || 401, { error: error.message });
     }
 
-    let id;
-    let product;
-    if (req.method === "DELETE") {
-      id = url.searchParams.get("id");
-      if (!id) return sendJson(res, 400, { error: "Produkt-ID fehlt." });
-    } else {
-      try {
-        product = validateProduct(await readJson(req));
-      } catch (error) {
-        return sendJson(res, error.statusCode || 400, { error: error.message || "Produktdaten ungültig." });
-      }
-    }
-
-    const saveLocally = async () => {
-      try {
-        if (req.method === "DELETE") await catalog.deleteProduct(id);
-        else await catalog.upsertProduct(product);
-        return sendJson(res, req.method === "POST" ? 201 : 200, {
-          ok: true,
-          localOnly: true,
-          notice: "Produkt nur lokal in products.json auf diesem Gerät gespeichert; nicht mit PostgreSQL oder der Live-Website synchronisiert."
-        });
-      } catch {
-        console.error("Produktänderung konnte nicht im lokalen Backup gespeichert werden.");
-        return sendJson(res, 503, { error: "PostgreSQL ist nicht verfügbar und die lokale Speicherung in products.json ist fehlgeschlagen." });
-      }
-    };
-
-    let pool;
-    try {
-      pool = getPool();
-    } catch {
-      return saveLocally();
-    }
-
     try {
       if (req.method === "DELETE") {
-        await pool.query("DELETE FROM products WHERE id = $1", [id]);
+        const id = url.searchParams.get("id");
+        if (!id) return sendJson(res, 400, { error: "Produkt-ID fehlt." });
+        await store.deleteProduct(id);
       } else {
-        await upsertProduct(pool, product);
+        const product = validateProduct(await readJson(req));
+        await store.saveProduct(product);
       }
-
-      let backupWarning = "";
-      try {
-        const snapshot = await dbCatalog(pool);
-        await catalog.replace(backupProducts(snapshot.products));
-      } catch {
-        backupWarning = " Die Änderung ist in PostgreSQL gespeichert, aber das lokale Backup konnte nicht aktualisiert werden.";
-        console.error("Datenbankänderung gespeichert; lokales Produkt-Backup konnte nicht aktualisiert werden.");
-      }
-      return sendJson(res, req.method === "POST" ? 201 : 200, { ok: true, backupWarning });
+      return sendJson(res, req.method === "POST" ? 201 : 200, {
+        ok: true,
+        persistent: true,
+        localOnly: true,
+        notice: "Produkt dauerhaft lokal in data/products.json gespeichert."
+      });
     } catch (error) {
       if (error.code === "23505") return sendJson(res, 409, { error: "Produkt-ID oder SKU ist bereits vorhanden." });
-      console.error("Produktänderung in PostgreSQL fehlgeschlagen:", error.code || "database_error");
-      return saveLocally();
+      if (error.statusCode) return sendJson(res, error.statusCode, { error: error.message });
+      console.error("Lokale Produktänderung fehlgeschlagen.");
+      return sendJson(res, 503, { error: "Produkt konnte nicht lokal gespeichert werden." });
+    }
+  }
+
+  if (url.pathname === "/api/drafts") {
+    try {
+      requireAdmin(req);
+    } catch (error) {
+      return sendJson(res, error.statusCode || 401, { error: error.message });
+    }
+    if (!["GET", "POST", "PUT", "DELETE"].includes(req.method)) {
+      res.setHeader("Allow", "GET, POST, PUT, DELETE");
+      return sendJson(res, 405, { error: "Methode nicht erlaubt." });
+    }
+    if (req.method === "GET") {
+      try {
+        return sendJson(res, 200, { drafts: await store.listDrafts(), persistent: true, localOnly: true });
+      } catch {
+        return sendJson(res, 503, { error: "Entwürfe konnten nicht lokal gelesen werden." });
+      }
+    }
+    try {
+      if (req.method === "DELETE") {
+        const id = url.searchParams.get("id");
+        if (!id) return sendJson(res, 400, { error: "Entwurfs-ID fehlt." });
+        await store.deleteDraft(id);
+      } else {
+        const product = validateProduct(await readJson(req));
+        await store.saveDraft(product);
+      }
+      return sendJson(res, req.method === "POST" ? 201 : 200, { ok: true, persistent: true, localOnly: true });
+    } catch (error) {
+      if (error.statusCode) return sendJson(res, error.statusCode, { error: error.message });
+      console.error("Lokale Entwurfsänderung fehlgeschlagen.");
+      return sendJson(res, 503, { error: "Entwurf konnte nicht lokal gespeichert werden." });
+    }
+  }
+
+  if (url.pathname === "/api/inventory") {
+    try {
+      requireAdmin(req);
+    } catch (error) {
+      return sendJson(res, error.statusCode || 401, { error: error.message });
+    }
+    if (req.method === "GET") {
+      try {
+        return sendJson(res, 200, { inventory: await store.listInventory(), persistent: true, localOnly: true });
+      } catch {
+        return sendJson(res, 503, { error: "Lagerbestand konnte nicht lokal gelesen werden." });
+      }
+    }
+    if (req.method !== "PUT") {
+      res.setHeader("Allow", "GET, PUT");
+      return sendJson(res, 405, { error: "Methode nicht erlaubt." });
+    }
+    try {
+      const { sku, stock } = await readJson(req);
+      await store.updateInventory(sku, stock);
+      return sendJson(res, 200, { ok: true, persistent: true, localOnly: true });
+    } catch (error) {
+      if (error.statusCode) return sendJson(res, error.statusCode, { error: error.message });
+      console.error("Lokale Lagerbestandsänderung fehlgeschlagen.");
+      return sendJson(res, 400, { error: error.message || "Lagerbestand ungültig." });
     }
   }
 
@@ -292,6 +289,7 @@ async function serveStatic(req, res, url) {
 }
 
 await loadLocalEnvironment(path.join(root, ".env.local"));
+await store.initialize();
 const server = createServer(async (req, res) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("Referrer-Policy", "same-origin");
@@ -310,5 +308,5 @@ const server = createServer(async (req, res) => {
 
 server.listen(port, "127.0.0.1", () => {
   console.log(`Rideworks lokal verfügbar: http://localhost:${port}`);
-  console.log("PostgreSQL ist die Produktquelle; products.json ist das lokale Backup. Dieser Server ist nur auf diesem Laptop erreichbar.");
+  console.log("Lokale Produkt-, Entwurfs- und Lagerdaten liegen dauerhaft in data/. Dieser Server ist nur auf diesem Laptop erreichbar.");
 });
