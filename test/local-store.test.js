@@ -39,6 +39,11 @@ test("product, draft, and inventory changes survive store recreation", async () 
       description: "Local file storage",
       category: "Test",
       brand: "Rideworks",
+      technicalDetails: {
+        productType: "Testrad",
+        weight: "1,2 kg",
+        extra: [{ label: "Material", value: "Aluminium" }]
+      },
       fits: ["*"],
       active: true,
       variants: [{
@@ -54,6 +59,32 @@ test("product, draft, and inventory changes survive store recreation", async () 
       }]
     });
     await store.updateInventory("RW-PERSIST-TEST", 7);
+    await store.saveProduct({
+      id: "local-persist-test",
+      name: "Persisted product",
+      description: "Local file storage",
+      category: "Test",
+      brand: "Rideworks",
+      technicalDetails: {
+        productType: "Testrad",
+        weight: "1,2 kg",
+        extra: [{ label: "Material", value: "Aluminium" }]
+      },
+      fits: ["*"],
+      active: true,
+      variants: [{
+        sku: "RW-PERSIST-RENAMED",
+        previousSku: "RW-PERSIST-TEST",
+        name: "Standard",
+        priceCents: 1590,
+        compareAtCents: null,
+        stock: 0,
+        lowStock: 3,
+        active: true,
+        image: "",
+        deliveryTime: ""
+      }]
+    });
     await store.saveDraft({
       id: "local-draft-test",
       name: "Persisted draft",
@@ -77,12 +108,20 @@ test("product, draft, and inventory changes survive store recreation", async () 
 
     const restarted = createLocalStore(directory, seedFile);
     const products = await restarted.listProducts();
-    assert.equal(products.find((product) => product.id === "local-persist-test").variants[0].stock, 7);
+    const savedProduct = products.find((product) => product.id === "local-persist-test");
+    assert.equal(savedProduct.variants[0].sku, "RW-PERSIST-RENAMED");
+    assert.equal(savedProduct.variants[0].stock, 7);
+    assert.deepEqual(savedProduct.technicalDetails, {
+      productType: "Testrad",
+      weight: "1,2 kg",
+      extra: [{ label: "Material", value: "Aluminium" }]
+    });
     assert.ok((await restarted.listDrafts()).some((draft) => draft.id === "local-draft-test"));
     assert.deepEqual(
       JSON.parse(await readFile(path.join(directory, "inventory.json"), "utf8")).inventory["RW-PERSIST-TEST"],
-      7
+      undefined
     );
+    assert.equal((await restarted.listInventory())["RW-PERSIST-RENAMED"], 7);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

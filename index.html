@@ -166,9 +166,16 @@ dialog h2{font:700 1.8rem/1 "Barlow Condensed",sans-serif;margin:0 0 1rem}
 label{display:grid;gap:.25rem;font-weight:500;font-size:.9rem;margin-bottom:.7rem}
 input,textarea{width:100%;font:inherit;padding:.55rem .7rem;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
 .vrow{display:grid;grid-template-columns:1fr 130px;gap:.6rem;padding:.8rem .8rem .3rem;border:1px solid var(--line);border-radius:6px;margin-bottom:.6rem}
-.vrow .pick,.vrow .rm,.vrow .prev{grid-column:1/-1}
+.vrow .pick,.vrow .rm,.vrow .prev,.vrow .sku{grid-column:1/-1}
 .prev{width:72px;height:72px;object-fit:contain;background:#fff;border:1px solid var(--line);border-radius:6px;margin-bottom:.5rem}
 .rm{justify-self:start;margin-bottom:.5rem}
+.tech-editor{border:1px solid var(--line);border-radius:6px;padding:.8rem;margin:1.2rem 0}
+.tech-editor legend{font-weight:700;padding:0 .35rem}
+.tech-editor p{color:var(--muted);font-size:.9rem;margin:.2rem 0 .8rem}
+.tech-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 .8rem}
+.tech-extra-row{display:grid;grid-template-columns:1fr 1fr auto;gap:.5rem;align-items:start;margin-bottom:.5rem}
+.tech-extra-row label{margin:0}
+.tech-extra-row button{margin-top:1.35rem}
 .acts{display:flex;justify-content:flex-end;gap:.6rem;margin-top:1rem}
 #err,#lerr,#coErr{color:#c0322b;font-weight:600;margin:.6rem 0 0;min-height:1.4em}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) #err,:root:not([data-theme="light"]) #lerr,:root:not([data-theme="light"]) #coErr{color:#ff8a80}}
@@ -188,6 +195,7 @@ input,textarea{width:100%;font:inherit;padding:.55rem .7rem;border:1px solid var
 #legalDlg{width:min(560px,calc(100% - 2rem))}
 #legalText{white-space:pre-line;color:var(--muted)}
 @media(max-width:720px){.footer-links{grid-template-columns:repeat(2,minmax(0,1fr));gap:.25rem .9rem;width:min(100%,520px)}}
+@media(max-width:520px){.tech-grid{grid-template-columns:1fr}.tech-extra-row{grid-template-columns:1fr}.tech-extra-row button{margin-top:0}}
 @media(max-width:600px){.site-footer{gap:.35rem;padding:1rem}.footer-links{gap:.2rem .65rem}.footer-links a{font-size:.95rem;line-height:1.3}}
 </style>
 </head>
@@ -236,7 +244,7 @@ input,textarea{width:100%;font:inherit;padding:.55rem .7rem;border:1px solid var
         <div class="acts adm" id="padm" hidden><button class="ghost" id="pedit">Bearbeiten</button><button class="del" id="pdel">Löschen</button></div>
       </div>
     </div>
-    <section id="relayDetails" class="relay-details" hidden aria-label="Produktbeschreibung und technische Details zum LED-Blinkrelais">
+    <section id="relayDetails" class="relay-details" hidden aria-label="Produktbeschreibung und technische Details">
       <div class="relay-accordion" id="relayAccordion">
         <details open>
           <summary>Beschreibung</summary>
@@ -333,6 +341,27 @@ input,textarea{width:100%;font:inherit;padding:.55rem .7rem;border:1px solid var
   <h2 id="at">Produkt hinzufügen</h2>
   <label>Produktname<input id="pn" autocomplete="off"></label>
   <label>Beschreibung<textarea id="pd" rows="3"></textarea></label>
+  <fieldset class="tech-editor">
+    <legend>Technische Details</legend>
+    <p>Diese Werte erscheinen in der technischen Produkttabelle. Artikelnummer, Variante und Passform werden über die Varianten- und Fahrzeugfelder gepflegt.</p>
+    <div class="tech-grid">
+      <label>Marke / Hersteller<input id="brand" maxlength="100"></label>
+      <label>Produkttyp<input id="techType" maxlength="200"></label>
+      <label>Tuningbereich<input id="techArea" maxlength="200"></label>
+      <label>Homologation / E-Prüfzeichen<input id="techHomologation" maxlength="200"></label>
+      <label>Spannung<input id="techVoltage" maxlength="100"></label>
+      <label>Farbe<input id="techColor" maxlength="100"></label>
+      <label>Material<input id="techMaterial" maxlength="150"></label>
+      <label>Glasfarbe<input id="techGlassColor" maxlength="100"></label>
+      <label>Gewinde / Anschluss<input id="techConnection" maxlength="200"></label>
+      <label>Gewicht<input id="techWeight" maxlength="100"></label>
+      <label>Blinkfrequenz<input id="techFrequency" maxlength="150"></label>
+      <label>Angegebene Last<input id="techLoad" maxlength="150"></label>
+    </div>
+    <h4>Weitere Tabellenzeilen</h4>
+    <div id="techExtraRows"></div>
+    <button class="ghost" id="addTechRow" type="button">Tabellenzeile hinzufügen</button>
+  </fieldset>
   <h3 style="margin-bottom:.6rem">Varianten</h3>
   <div id="vrows"></div>
   <button class="ghost" id="addVar" type="button">Variante hinzufügen</button>
@@ -473,35 +502,61 @@ function render(){
 }
 let cur=null;
 function openProduct(id){location.hash="#product/"+encodeURIComponent(id);}
-function renderTechnicalSpecs(product,variant){
+function technicalValues(product,variant){
   const meta=TECHNICAL_META[product.id]||{};
+  const saved=product.technicalDetails&&typeof product.technicalDetails==="object"?product.technicalDetails:{};
   const sourceText=`${product.name||""} ${product.description||product.desc||""}`;
   const variantName=String(variant?.name||"");
-  const color=product.color||variant?.color||meta.color||
-    (meta.displayColor&&/rot/i.test(variantName)?"Rot (Display)":meta.displayColor&&/blau/i.test(variantName)?"Blau (Display)":/schwarz/i.test(`${variantName} ${sourceText}`)?"Schwarz":"Nicht angegeben");
+  const inferred={
+    productType:meta.type||product.name||"",
+    tuningArea:product.category||meta.area||"",
+    homologation:product.homologation||product.eMark||"Nicht angegeben; Herstellerangaben prüfen",
+    voltage:product.voltage||meta.voltage||(/\b12\s*-?\s*V\b/i.test(sourceText)?"12 V":""),
+    color:product.color||variant?.color||meta.color||
+    (meta.displayColor&&/rot/i.test(variantName)?"Rot (Display)":meta.displayColor&&/blau/i.test(variantName)?"Blau (Display)":/schwarz/i.test(`${variantName} ${sourceText}`)?"Schwarz":"Nicht angegeben"),
+    material:product.material||"",
+    glassColor:product.glassColor||meta.glassColor||(meta.hasLens?"":"Nicht zutreffend"),
+    threadOrConnection:product.threadOrConnection||product.connection||meta.connection||"",
+    weight:product.weight??"",
+    frequency:meta.frequency||"",
+    load:meta.load||""
+  };
+  for(const key of Object.keys(inferred)){
+    if(Object.hasOwn(saved,key))inferred[key]=saved[key];
+  }
+  inferred.brand=product.brand||product.manufacturer||"";
+  inferred.extra=Array.isArray(saved.extra)?saved.extra:[];
+  return inferred;
+}
+function displayedSpecValue(value){return String(value??"").trim()||"Nicht angegeben";}
+function renderTechnicalSpecs(product,variant){
+  const technical=technicalValues(product,variant);
   const fits=Array.isArray(product.fits)?product.fits:[];
   const fitment=product.fitmentConfirmed===false?"Nicht bestätigt":
     fits.includes("*")?"Universal laut Produktdaten; technische Kompatibilität prüfen":
     fits.length?fits.map(id=>(mopeds().find(item=>item[0]===id)||[,id])[1]).join(", "):"Nicht angegeben";
-  const voltage=product.voltage||meta.voltage||(/\b12\s*-?\s*V\b/i.test(sourceText)?"12 V":"Nicht angegeben");
-  const glassColor=product.glassColor||meta.glassColor||(meta.hasLens?"Nicht angegeben":"Nicht zutreffend");
   const rows=[
     ["Artikel-Nr.",variant?.sku||"Nicht angegeben"],
-    ["Ausführung",variantName||"Nicht angegeben"],
-    ["Marke / Hersteller",product.brand||product.manufacturer||"Nicht angegeben"],
-    ["Produkttyp",product.productType||meta.type||product.name||"Nicht angegeben"],
-    ["Tuningbereich",product.tuningArea||product.category||meta.area||"Nicht angegeben"],
-    ["Homologation / E-Prüfzeichen",product.homologation||product.eMark||"Nicht angegeben; Herstellerangaben prüfen"],
-    ["Spannung",voltage],
-    ["Farbe",color],
-    ["Material",product.material||"Nicht angegeben"],
-    ["Glasfarbe",glassColor],
-    ["Gewinde / Anschluss",product.threadOrConnection||product.connection||meta.connection||"Nicht angegeben"],
-    ["Gewicht",product.weight??"Nicht angegeben"],
+    ["Ausführung",variant?.name||"Nicht angegeben"],
+    ["Marke / Hersteller",displayedSpecValue(technical.brand)],
+    ["Produkttyp",displayedSpecValue(technical.productType)],
+    ["Tuningbereich",displayedSpecValue(technical.tuningArea)],
+    ["Homologation / E-Prüfzeichen",displayedSpecValue(technical.homologation)],
+    ["Spannung",displayedSpecValue(technical.voltage)],
+    ["Farbe",displayedSpecValue(technical.color)],
+    ["Material",displayedSpecValue(technical.material)],
+    ["Glasfarbe",displayedSpecValue(technical.glassColor)],
+    ["Gewinde / Anschluss",displayedSpecValue(technical.threadOrConnection)],
+    ["Gewicht",displayedSpecValue(technical.weight)],
     ["Passform",fitment]
   ];
-  if(meta.frequency)rows.push(["Blinkfrequenz",meta.frequency]);
-  if(meta.load)rows.push(["Angegebene Last",meta.load]);
+  if(String(technical.frequency||"").trim())rows.push(["Blinkfrequenz",technical.frequency]);
+  if(String(technical.load||"").trim())rows.push(["Angegebene Last",technical.load]);
+  for(const spec of technical.extra){
+    if(spec&&typeof spec.label==="string"&&typeof spec.value==="string"&&spec.label.trim()){
+      rows.push([spec.label.trim(),displayedSpecValue(spec.value)]);
+    }
+  }
   const body=$("#relaySpecRows");
   body.replaceChildren(...rows.map(([label,value])=>{
     const row=document.createElement("tr");
@@ -616,11 +671,20 @@ const shrink=f=>new Promise((ok,no)=>{const u=URL.createObjectURL(f),i=new Image
 const err=t=>$("#err").textContent=t||"";
 function vrow(v){
   const d=document.createElement("div");d.className="vrow";
-  d.innerHTML=`<label>Variante<input class="vn" autocomplete="off" placeholder="z. B. Schwarz"></label><label>Preis in €<input class="vp" type="number" min="0" step="0.01" inputmode="decimal"></label><label class="pick">Bild dieser Variante<input class="vi" type="file" accept="image/*"></label><img class="prev" alt="Vorschau" hidden><button class="ghost rm" type="button">Variante entfernen</button>`;
+  d.innerHTML=`<label class="sku">Artikel-Nr. / SKU<input class="vs" maxlength="80" autocomplete="off"></label><label>Variante<input class="vn" autocomplete="off" placeholder="z. B. Schwarz"></label><label>Preis in €<input class="vp" type="number" min="0" step="0.01" inputmode="decimal"></label><label class="pick">Bild dieser Variante<input class="vi" type="file" accept="image/*"></label><img class="prev" alt="Vorschau" hidden><button class="ghost rm" type="button">Variante entfernen</button>`;
   d.querySelector(".vi").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{d.dataset.img=await shrink(f);const im=d.querySelector(".prev");im.src=d.dataset.img;im.hidden=false;err();}catch{err("Das Bild konnte nicht gelesen werden.");}};
   d.querySelector(".rm").onclick=()=>{if($("#vrows").children.length>1)d.remove();};
-  if(v){d.dataset.sku=v.sku||"";d.querySelector(".vn").value=v.name;d.querySelector(".vp").value=v.price;if(v.img||v.image){d.dataset.img=v.img||v.image;const im=d.querySelector(".prev");im.src=src(d.dataset.img);im.hidden=false;}}
+  if(v){d.querySelector(".vs").value=v.sku||"";d.querySelector(".vn").value=v.name;d.querySelector(".vp").value=v.price;if(v.img||v.image){d.dataset.img=v.img||v.image;const im=d.querySelector(".prev");im.src=src(d.dataset.img);im.hidden=false;}}
   $("#vrows").append(d);
+}
+function technicalExtraRow(spec={}){
+  const row=document.createElement("div");
+  row.className="tech-extra-row";
+  row.innerHTML='<label>Merkmal<input class="tech-extra-label" maxlength="100"></label><label>Wert<input class="tech-extra-value" maxlength="300"></label><button class="ghost" type="button">Entfernen</button>';
+  row.querySelector(".tech-extra-label").value=spec.label||"";
+  row.querySelector(".tech-extra-value").value=spec.value||"";
+  row.querySelector("button").onclick=()=>row.remove();
+  $("#techExtraRows").append(row);
 }
 let editId=null;
 async function put(id,data){
@@ -628,23 +692,34 @@ async function put(id,data){
   const response=await fetch("/api/products",{
     method:remote.some(x=>x.id===id)?"PUT":"POST",
     headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({id,name:data.name,description:data.desc,category:existing?.category||"",brand:existing?.brand||"",active:true,fits:data.fits,
-      variants:data.variants.map((variant,index)=>({
-        sku:variant.sku||existing?.variants[index]?.sku||`RW-${(id||("P"+Date.now())).toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,24)}-${index+1}`,
+    body:JSON.stringify({id,name:data.name,description:data.desc,category:existing?.category||"",brand:data.brand,technicalDetails:data.technicalDetails,active:true,fits:data.fits,
+      variants:data.variants.map((variant,index)=>{
+        const previous=existing?.variants.find(item=>item.sku===variant.sku)||existing?.variants[index];
+        return {
+        sku:variant.sku||previous?.sku||`RW-${(id||("P"+Date.now())).toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,24)}-${index+1}`,
+        previousSku:previous&&previous.sku!==variant.sku?previous.sku:"",
         name:variant.name,
         price:variant.price,
-        compareAtPrice:null,
-        stock:0,
-        lowStock:3,
-        active:true,
+        compareAtPrice:previous?.compareAtPrice??null,
+        stock:previous?.stock??0,
+        lowStock:previous?.lowStock??3,
+        active:previous?.active!==false,
         image:variant.img||"",
-        deliveryTime:""
-      }))
+        deliveryTime:previous?.deliveryTime||""
+      };})
     })
   });
   const result=await response.json().catch(()=>({error:"Serverantwort ungültig."}));
   if(!response.ok)throw new Error(result.error||"Produkt konnte nicht gespeichert werden.");
-  remote=[...remote.filter(x=>x.id!==id),{id,remote:1,...data,description:data.desc,active:true}];
+  const variants=data.variants.map((variant,index)=>{
+    const previous=existing?.variants.find(item=>item.sku===variant.sku)||existing?.variants[index];
+    const sku=variant.sku||previous?.sku||`RW-${id.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,24)}-${index+1}`;
+    return {...previous,sku,name:variant.name,price:variant.price,compareAtPrice:previous?.compareAtPrice??null,
+      stock:previous?.stock??0,lowStock:previous?.lowStock??3,active:previous?.active!==false,
+      img:variant.img||"",image:variant.img||"",deliveryTime:previous?.deliveryTime||""};
+  });
+  remote=[...remote.filter(x=>x.id!==id),{...existing,id,remote:1,name:data.name,description:data.desc,desc:data.desc,
+    category:existing?.category||"",brand:data.brand,technicalDetails:data.technicalDetails,active:true,fits:data.fits,variants}];
   render();
   if(cur===id&&location.hash.startsWith("#product/"))paintProd();
   toast(result.notice||result.backupWarning||(result.localOnly?"Nur lokal gespeichert.":"Produkt dauerhaft gespeichert."));
@@ -654,6 +729,21 @@ function openForm(p){
   editId=p?p.id:null;
   $("#at").textContent=p?"Produkt bearbeiten":"Produkt hinzufügen";
   $("#pn").value=p?p.name:"";$("#pd").value=p?p.description||p.desc||"":"";
+  const technical=technicalValues(p||{},p?.variants?.[sel[p.id]||0]||p?.variants?.[0]);
+  $("#brand").value=technical.brand;
+  $("#techType").value=technical.productType;
+  $("#techArea").value=technical.tuningArea;
+  $("#techHomologation").value=technical.homologation;
+  $("#techVoltage").value=technical.voltage;
+  $("#techColor").value=technical.color;
+  $("#techMaterial").value=technical.material;
+  $("#techGlassColor").value=technical.glassColor;
+  $("#techConnection").value=technical.threadOrConnection;
+  $("#techWeight").value=technical.weight;
+  $("#techFrequency").value=technical.frequency;
+  $("#techLoad").value=technical.load;
+  $("#techExtraRows").replaceChildren();
+  technical.extra.forEach(technicalExtraRow);
   $("#vrows").innerHTML="";err();
   (p?p.variants:[null]).forEach(v=>vrow(v));
   drawFits(p?p.fits||["*"]:["*"]);
@@ -661,18 +751,35 @@ function openForm(p){
 }
 $("#addBtn").onclick=()=>openForm(null);
 $("#addVar").onclick=()=>vrow(null);
+$("#addTechRow").onclick=()=>technicalExtraRow();
 $("#cancel").onclick=()=>$("#addDlg").close();
 $("#save").onclick=async()=>{
   const name=$("#pn").value.trim();
-  const variants=[...$("#vrows").children].map(r=>({sku:r.dataset.sku||"",name:r.querySelector(".vn").value.trim(),price:parseFloat(r.querySelector(".vp").value),img:r.dataset.img||""}));
+  const variants=[...$("#vrows").children].map(r=>({sku:r.querySelector(".vs").value.trim(),name:r.querySelector(".vn").value.trim(),price:parseFloat(r.querySelector(".vp").value),img:r.dataset.img||""}));
   if(!name)return err("Gib dem Produkt einen Namen.");
   if(variants.some(v=>!v.name))return err("Jede Variante braucht einen Namen.");
   if(variants.some(v=>!Number.isFinite(v.price)||v.price<0))return err("Jede Variante braucht einen Preis.");
   const fits=[...document.querySelectorAll("#fits input:checked")].map(i=>i.value);
   if(!fits.length)return err("Wähle mindestens ein Moped oder „Universal“.");
+  const extra=[...$("#techExtraRows").children].map(row=>({
+    label:row.querySelector(".tech-extra-label").value.trim(),
+    value:row.querySelector(".tech-extra-value").value.trim()
+  })).filter(spec=>spec.label||spec.value);
+  if(extra.some(spec=>!spec.label||!spec.value))return err("Jede zusätzliche Tabellenzeile braucht Merkmal und Wert.");
   if(backupOnly&&!localWritable)return err("PostgreSQL ist nicht verfügbar. Das lokale Backup ist schreibgeschützt. Prüfe DATABASE_URL und führe die Datenbankmigrationen aus, dann lade den Shop neu.");
   const old=editId&&all().find(x=>x.id===editId),id=editId||"p"+Date.now().toString(36);
-  const prod={name,desc:$("#pd").value.trim(),variants,fits,created:old?.created||Date.now()};
+  const prod={name,desc:$("#pd").value.trim(),brand:$("#brand").value.trim(),variants:variants.map((variant,index)=>{
+    const previous=old?.variants.find(item=>item.sku===variant.sku)||old?.variants[index];
+    return {...variant,previousSku:previous&&previous.sku!==variant.sku?previous.sku:""};
+  }),fits,created:old?.created||Date.now(),
+    technicalDetails:{
+      productType:$("#techType").value.trim(),tuningArea:$("#techArea").value.trim(),
+      homologation:$("#techHomologation").value.trim(),voltage:$("#techVoltage").value.trim(),
+      color:$("#techColor").value.trim(),material:$("#techMaterial").value.trim(),
+      glassColor:$("#techGlassColor").value.trim(),threadOrConnection:$("#techConnection").value.trim(),
+      weight:$("#techWeight").value.trim(),frequency:$("#techFrequency").value.trim(),
+      load:$("#techLoad").value.trim(),extra
+    }};
   try{await put(id,prod);}catch(error){return err(error.message||"Produkt konnte nicht gespeichert werden.");}
   $("#addDlg").close();
 };
