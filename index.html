@@ -327,7 +327,7 @@ document.querySelector(".footer-links").addEventListener("click",event=>{
 $("#legalClose").onclick=()=>$("#legalDlg").close();
 const src=u=>{u=u&&u[0]==="@"?IMG[u.slice(1)]:u;return /^(data:image\/|\/_blob\/)/.test(u||"")||/^\/images\/[a-z0-9-]+\.(?:jpe?g|png|webp|svg)$/i.test(u||"")?u:PH;};
 const MOPEDS=[["beta-rr50","Beta RR 50"],["derbi-senda","Derbi Senda"],["rieju-mrt","Rieju MRT 50"],["aprilia-rx","Aprilia RX 50"],["aprilia-sx","Aprilia SX 50"],["yamaha-dt","Yamaha DT 50"],["yamaha-tzr","Yamaha TZR 50"],["gilera-smt","Gilera SMT 50"],["peugeot-xps","Peugeot XPS 50"],["sherco-sm","Sherco SM 50"],["ksr-tr","KSR TR 50"]];
-let remote=[],customMop=[],sel={},cart=[],db=null,admin=false,backupOnly=false,moped="",checkoutKey="";
+let remote=[],customMop=[],sel={},cart=[],db=null,admin=false,backupOnly=false,localWritable=false,moped="",checkoutKey="";
 const mopeds=()=>[...MOPEDS,...customMop];
 const store=(k,v,sess)=>{try{const s=sess?sessionStorage:localStorage;v?s.setItem(k,v):s.removeItem(k);}catch{}};
 try{moped=localStorage.getItem("moped")||"";}catch{}
@@ -475,7 +475,7 @@ async function put(id,data){
   remote=[...remote.filter(x=>x.id!==id),{id,remote:1,...data,description:data.desc,active:true}];
   render();
   if(cur===id&&location.hash.startsWith("#product/"))paintProd();
-  toast(result.backupWarning||"Produkt dauerhaft gespeichert.");
+  toast(result.notice||result.backupWarning||(result.localOnly?"Nur lokal gespeichert.":"Produkt dauerhaft gespeichert."));
 }
 function drawFits(s){$("#fits").innerHTML=[["*","Universal (alle Mopeds)"],...mopeds()].map(([id,n])=>`<label><input type="checkbox" value="${esc(id)}"${s.includes(id)?" checked":""}>${esc(n)}</label>`).join("");}
 function openForm(p){
@@ -498,6 +498,7 @@ $("#save").onclick=async()=>{
   if(variants.some(v=>!Number.isFinite(v.price)||v.price<0))return err("Jede Variante braucht einen Preis.");
   const fits=[...document.querySelectorAll("#fits input:checked")].map(i=>i.value);
   if(!fits.length)return err("Wähle mindestens ein Moped oder „Universal“.");
+  if(backupOnly&&!localWritable)return err("PostgreSQL ist nicht verfügbar. Das lokale Backup ist schreibgeschützt. Prüfe DATABASE_URL und führe die Datenbankmigrationen aus, dann lade den Shop neu.");
   const old=editId&&all().find(x=>x.id===editId),id=editId||"p"+Date.now().toString(36);
   const prod={name,desc:$("#pd").value.trim(),variants,fits,created:old?.created||Date.now()};
   try{await put(id,prod);}catch(error){return err(error.message||"Produkt konnte nicht gespeichert werden.");}
@@ -564,7 +565,8 @@ setAdmin();render();refreshAdmin();drawCart();route();
     const r=await fetch("/api/products",{cache:"no-store"});
     const catalog=await r.json();
     if(r.ok&&Array.isArray(catalog.products)){
-      backupOnly=Boolean(catalog.backupOnly||catalog.persistent===false);
+      localWritable=Boolean(catalog.localWritable);
+      backupOnly=Boolean(catalog.backupOnly||(catalog.persistent===false&&!localWritable));
       remote=catalog.products.map(p=>({id:p.id,remote:1,...p,desc:p.description||p.desc,variants:(p.variants||[]).map(v=>({name:v.name,sku:v.sku,price:v.price==null?null:Number(v.price),active:v.active!==false,img:v.image||v.img||""}))}));
       render();
       $("#addBtn").hidden=!admin;

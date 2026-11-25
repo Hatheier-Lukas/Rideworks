@@ -109,8 +109,8 @@ async function handleApi(req, res, url) {
           return sendJson(res, 200, {
             products: await catalog.list(),
             persistent: false,
-            backupOnly: true,
-            notice: "PostgreSQL ist nicht verfügbar. Es wird das lokale Backup angezeigt; Produktänderungen sind gesperrt."
+            localWritable: true,
+            notice: "PostgreSQL ist nicht verfügbar. Änderungen werden nur lokal in products.json auf diesem Gerät gespeichert."
           });
         } catch {
           return sendJson(res, 503, {
@@ -131,15 +131,12 @@ async function handleApi(req, res, url) {
       return sendJson(res, error.statusCode || 401, { error: error.message });
     }
 
-    let pool;
-    try {
-      pool = getPool();
-    } catch {
-      return sendJson(res, 503, { error: "PostgreSQL ist nicht verfügbar. Das lokale Backup ist schreibgeschützt." });
-    }
-
+    let id;
     let product;
-    if (req.method !== "DELETE") {
+    if (req.method === "DELETE") {
+      id = url.searchParams.get("id");
+      if (!id) return sendJson(res, 400, { error: "Produkt-ID fehlt." });
+    } else {
       try {
         product = validateProduct(await readJson(req));
       } catch (error) {
@@ -147,10 +144,30 @@ async function handleApi(req, res, url) {
       }
     }
 
+    const saveLocally = async () => {
+      try {
+        if (req.method === "DELETE") await catalog.deleteProduct(id);
+        else await catalog.upsertProduct(product);
+        return sendJson(res, req.method === "POST" ? 201 : 200, {
+          ok: true,
+          localOnly: true,
+          notice: "Produkt nur lokal in products.json auf diesem Gerät gespeichert; nicht mit PostgreSQL oder der Live-Website synchronisiert."
+        });
+      } catch {
+        console.error("Produktänderung konnte nicht im lokalen Backup gespeichert werden.");
+        return sendJson(res, 503, { error: "PostgreSQL ist nicht verfügbar und die lokale Speicherung in products.json ist fehlgeschlagen." });
+      }
+    };
+
+    let pool;
+    try {
+      pool = getPool();
+    } catch {
+      return saveLocally();
+    }
+
     try {
       if (req.method === "DELETE") {
-        const id = url.searchParams.get("id");
-        if (!id) return sendJson(res, 400, { error: "Produkt-ID fehlt." });
         await pool.query("DELETE FROM products WHERE id = $1", [id]);
       } else {
         await upsertProduct(pool, product);
@@ -168,7 +185,7 @@ async function handleApi(req, res, url) {
     } catch (error) {
       if (error.code === "23505") return sendJson(res, 409, { error: "Produkt-ID oder SKU ist bereits vorhanden." });
       console.error("Produktänderung in PostgreSQL fehlgeschlagen:", error.code || "database_error");
-      return sendJson(res, 503, { error: "Produktdatenbank ist nicht verfügbar. Lokales Backup blieb unverändert." });
+      return saveLocally();
     }
   }
 

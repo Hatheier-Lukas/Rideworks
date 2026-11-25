@@ -39,3 +39,41 @@ test("serialized backup refreshes leave the newest database snapshot on disk", a
     assert.deepEqual(await backup.list(), latest);
   });
 });
+
+test("local edits and deletes persist as products.json without losing other products", async () => {
+  await withCatalog(async (backup, filePath) => {
+    const product = {
+      id: "local-product",
+      name: "Local product",
+      description: "Saved while PostgreSQL is unavailable",
+      category: "Parts",
+      brand: "Rideworks",
+      fits: ["*"],
+      active: true,
+      variants: [{
+        sku: "RW-LOCAL-1",
+        name: "Blue",
+        priceCents: 1590,
+        compareAtCents: null,
+        stock: 4,
+        lowStock: 2,
+        active: true,
+        image: "/images/relais.jpeg",
+        deliveryTime: "2 days"
+      }]
+    };
+
+    await backup.upsertProduct(product);
+    await backup.upsertProduct({ ...product, name: "Updated local product" });
+    const saved = await backup.list();
+    assert.equal(saved.length, 2);
+    assert.equal(saved[1].name, "Updated local product");
+    assert.equal(saved[1].variants[0].price, 15.9);
+    assert.equal(saved[1].variants[0].img, "/images/relais.jpeg");
+    assert.equal(saved[0].id, "old");
+
+    await backup.deleteProduct("local-product");
+    assert.deepEqual(await backup.list(), [{ id: "old" }]);
+    assert.deepEqual(JSON.parse(await readFile(filePath, "utf8")), { products: [{ id: "old" }] });
+  });
+});
