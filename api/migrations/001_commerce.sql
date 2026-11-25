@@ -81,3 +81,9 @@ INSERT INTO inventory (sku, stock) VALUES
   ('RW-CHAIN-BRUSH-1', 0),
   ('RW-STRAP-PAIR-1', 0)
 ON CONFLICT (sku) DO NOTHING;
+
+UPDATE product_variants SET image = '/images/relais.jpeg' WHERE sku = 'RW-RELAIS-1' AND image = '';
+UPDATE product_variants SET image = '/images/spiegel.jpeg' WHERE sku = 'RW-SPIEGEL-1' AND image = '';
+UPDATE product_variants SET image = '/images/halter.jpeg' WHERE sku IN ('RW-HALTER-1', 'RW-HALTER-2', 'RW-HALTER-3') AND image = '';
+UPDATE product_variants SET image = '/images/thermometer-red.jpg' WHERE sku = 'RW-THERMOMETER-RED' AND image = '';
+UPDATE product_variants SET image = '/images/thermometer-blue.jpg' WHERE sku = 'RW-THERMOMETER-BLUE' AND image = '';
