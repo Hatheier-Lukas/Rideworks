@@ -1,0 +1,168 @@
+{
+  "products": [
+    {
+      "id": "relais",
+      "name": "12V LED-Blinkrelais mit einstellbarer Geschwindigkeit",
+      "description": "2-polig, 50 bis 200 Blinkzyklen pro Minute. Für LED-Blinker, 21 W × 2 + 3,4 W.",
+      "fits": ["*"],
+      "active": true,
+      "variants": [
+        { "sku": "RW-RELAIS-1", "name": "12 V, 2-polig", "price": 9.9 }
+      ]
+    },
+    {
+      "id": "spiegel",
+      "name": "Motorrad-Spiegel, universelle Lenker-Rückspiegel",
+      "description": "Zwei runde Lenkerspiegel (links und rechts) mit Klemmhalterung, schwarz.",
+      "fits": ["*"],
+      "active": true,
+      "variants": [
+        { "sku": "RW-SPIEGEL-1", "name": "Paar, universal", "price": 19.9 }
+      ]
+    },
+    {
+      "id": "halter",
+      "name": "Kennzeichenhalter für Beta RR 50",
+      "description": "Wähle, welche Blinker und welches Rücklicht verbaut sind.",
+      "fits": ["beta-rr50"],
+      "active": true,
+      "variants": [
+        { "sku": "RW-HALTER-1", "name": "Mini-LED-Blinker + Mini-Rücklicht", "price": 49.9 },
+        { "sku": "RW-HALTER-2", "name": "Mini-Blinker + Original-Rücklicht", "price": 44.9 },
+        { "sku": "RW-HALTER-3", "name": "Original-Blinker + Original-Rücklicht", "price": 29.9 }
+      ]
+    },
+    {
+      "id": "bezug",
+      "name": "Guts Sitzbankbezug, universalpassend",
+      "description": "Sitzbankbezug für Mopeds und Motorräder, passt universal.",
+      "fits": ["*"],
+      "active": true,
+      "variants": [
+        { "sku": "RW-BEZUG-1", "name": "Universal", "price": 24.9 }
+      ]
+    },
+    {
+      "id": "thermometer",
+      "name": "Digitales Motorrad-Thermometer mit Sensor",
+      "description": "Digitalanzeige mit Temperaturfühler. Fahrzeugkompatibilität und Einbau vor Bestellung prüfen.",
+      "fits": [],
+      "fitmentConfirmed": false,
+      "active": false,
+      "variants": [
+        { "sku": "RW-THERMOMETER-RED", "name": "Rotes Display", "price": null, "img": "/images/thermometer-red.jpg" },
+        { "sku": "RW-THERMOMETER-BLUE", "name": "Blaues Display", "price": null, "img": "/images/thermometer-blue.jpg" }
+      ]
+    },
+    {
+      "id": "usb-charger",
+      "name": "USB-Ladegerät für den Lenker",
+      "description": "12-V-Ladegerät für die Montage am Lenker. Spannung, Absicherung und Fahrzeugkompatibilität vor Einbau prüfen.",
+      "fits": [],
+      "fitmentConfirmed": false,
+      "active": false,
+      "variants": [
+        { "sku": "RW-USB-CHARGER-1", "name": "USB-Ladegerät", "price": null, "img": "" }
+      ]
+    },
+    {
+      "id": "usb-outlet",
+      "name": "12-V-Steckdose fürs Moped",
+      "description": "Zusätzliche 12-V-Steckdose. Anschluss, Absicherung und Fahrzeugkompatibilität vor Einbau prüfen.",
+      "fits": [],
+      "fitmentConfirmed": false,
+      "active": false,
+      "variants": [
+        { "sku": "RW-USB-OUTLET-1", "name": "12-V-Steckdose", "price": null, "img": "" }
+      ]
+    },
+    {
+      "id": "phone-holder",
+      "name": "Lenker-Handyhalterung",
+      "description": "Halterung zur Montage am Lenker. Lenkerdurchmesser und sichere Befestigung vor Bestellung prüfen.",
+      "fits": [],
+      "fitmentConfirmed": false,
+      "active": false,
+      "variants": [
+        { "sku": "RW-PHONE-HOLDER-1", "name": "Schwarz", "price": null, "img": "" }
+      ]
+    },
+    {
+      "id": "led-indicators",
+      "name": "LED-Blinker-Set",
+      "description": "Paar LED-Blinker. Elektrische Kompatibilität, Widerstand und Zulassung für das Fahrzeug vor Einbau prüfen.",
+      "fits": [],
+      "fitmentConfirmed": false,
+      "active": false,
+      "variants": [
+        { "sku": "RW-LED-INDICATOR-PAIR", "name": "Paar, schwarz", "price": null, "img": "" }
+      ]
+    },
+    {
+      "id": "tail-light",
+      "name": "LED-Rücklicht",
+      "description": "LED-Rücklicht. Maße, Anschlussbelegung und Zulassung für das Fahrzeug vor Bestellung prüfen.",
+      "fits": [],
+      "fitmentConfirmed": false,
+      "active": false,
+      "variants": [
+        { "sku": "RW-LED-TAIL-LIGHT-1", "name": "Rücklicht", "price": null, "img": "" }
+      ]
+    },
+    {
+      "id": "chain-lock",
+      "name": "Kettenschloss",
+      "description": "Sicherungsschloss für Mopeds. Länge und Stärke werden nach Lieferantenauswahl ergänzt.",
+      "fits": [],
+      "fitmentConfirmed": false,
+      "active": false,
+      "variants": [
+        { "sku": "RW-CHAIN-LOCK-1", "name": "Kettenschloss", "price": null, "img": "" }
+      ]
+    },
+    {
+      "id": "brake-lever",
+      "name": "Bremshebel",
+      "description": "Ersatz-Bremshebel. Fahrzeugmodell, Hebelaufnahme und Ausführung vor Bestellung abgleichen.",
+      "fits": [],
+      "fitmentConfirmed": false,
+      "active": false,
+      "variants": [
+        { "sku": "RW-BRAKE-LEVER-1", "name": "Bremshebel", "price": null, "img": "" }
+      ]
+    },
+    {
+      "id": "clutch-lever",
+      "name": "Kupplungshebel",
+      "description": "Ersatz-Kupplungshebel. Fahrzeugmodell, Hebelaufnahme und Ausführung vor Bestellung abgleichen.",
+      "fits": [],
+      "fitmentConfirmed": false,
+      "active": false,
+      "variants": [
+        { "sku": "RW-CLUTCH-LEVER-1", "name": "Kupplungshebel", "price": null, "img": "" }
+      ]
+    },
+    {
+      "id": "chain-brush",
+      "name": "Kettenreinigungsbürste",
+      "description": "Bürste zur Reinigung der Antriebskette.",
+      "fits": [],
+      "fitmentConfirmed": false,
+      "active": false,
+      "variants": [
+        { "sku": "RW-CHAIN-BRUSH-1", "name": "Reinigungsbürste", "price": null, "img": "" }
+      ]
+    },
+    {
+      "id": "tie-down-straps",
+      "name": "Spanngurte fürs Moped",
+      "description": "Spanngurte zur Sicherung beim Transport. Traglast und Länge werden nach Lieferantenauswahl ergänzt.",
+      "fits": [],
+      "fitmentConfirmed": false,
+      "active": false,
+      "variants": [
+        { "sku": "RW-STRAP-PAIR-1", "name": "Paar", "price": null, "img": "" }
+      ]
+    }
+  ]
+}
