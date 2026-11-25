@@ -7,7 +7,7 @@
       "fits": ["*"],
       "active": true,
       "variants": [
-        { "sku": "RW-RELAIS-1", "name": "12 V, 2-polig", "price": 9.9 }
+        { "sku": "RW-RELAIS-1", "name": "12 V, 2-polig", "price": 9.9, "img": "/images/relais.jpeg" }
       ]
     },
     {
@@ -17,7 +17,7 @@
       "fits": ["*"],
       "active": true,
       "variants": [
-        { "sku": "RW-SPIEGEL-1", "name": "Paar, universal", "price": 19.9 }
+        { "sku": "RW-SPIEGEL-1", "name": "Paar, universal", "price": 19.9, "img": "/images/spiegel.jpeg" }
       ]
     },
     {
@@ -27,9 +27,9 @@
       "fits": ["beta-rr50"],
       "active": true,
       "variants": [
-        { "sku": "RW-HALTER-1", "name": "Mini-LED-Blinker + Mini-Rücklicht", "price": 49.9 },
-        { "sku": "RW-HALTER-2", "name": "Mini-Blinker + Original-Rücklicht", "price": 44.9 },
-        { "sku": "RW-HALTER-3", "name": "Original-Blinker + Original-Rücklicht", "price": 29.9 }
+        { "sku": "RW-HALTER-1", "name": "Mini-LED-Blinker + Mini-Rücklicht", "price": 49.9, "img": "/images/halter.jpeg" },
+        { "sku": "RW-HALTER-2", "name": "Mini-Blinker + Original-Rücklicht", "price": 44.9, "img": "/images/halter.jpeg" },
+        { "sku": "RW-HALTER-3", "name": "Original-Blinker + Original-Rücklicht", "price": 29.9, "img": "/images/halter.jpeg" }
       ]
     },
     {
@@ -39,7 +39,7 @@
       "fits": ["*"],
       "active": true,
       "variants": [
-        { "sku": "RW-BEZUG-1", "name": "Universal", "price": 24.9 }
+        { "sku": "RW-BEZUG-1", "name": "Universal", "price": 24.9, "img": "" }
       ]
     },
     {

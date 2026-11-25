@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="640" viewBox="0 0 640 640">
+  <rect width="640" height="640" fill="#f3f4f5"/>
+  <circle cx="320" cy="265" r="128" fill="#fff" stroke="#d7dce1" stroke-width="3"/>
+  <path d="M253 225h134l20 130H233z" fill="#191d22"/>
+  <path d="M275 225c0-27 20-48 45-48s45 21 45 48" fill="none" stroke="#ffb000" stroke-width="14" stroke-linecap="round"/>
+  <path d="M275 275h90" stroke="#ffb000" stroke-width="8" stroke-linecap="round"/>
+  <text x="320" y="457" text-anchor="middle" fill="#252b31" font-family="Arial,sans-serif" font-size="25" font-weight="700" letter-spacing="3">RIDEWORKS</text>
+  <text x="320" y="496" text-anchor="middle" fill="#7b838c" font-family="Arial,sans-serif" font-size="20">PRODUKTBILD FOLGT</text>
+</svg>

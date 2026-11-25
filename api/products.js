@@ -56,6 +56,12 @@ function validateProduct(body) {
     if (!Number.isInteger(lowStock) || lowStock < 0 || lowStock > 100000) {
       throw new Error("Der Mindestbestand ist ungültig.");
     }
+    const image = typeof variant.image === "string" ? variant.image : "";
+    const isDataImage = /^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(image);
+    const isLocalImage = image === "" || /^\/images\/[a-z0-9-]+\.(?:jpe?g|png|webp|svg)$/i.test(image);
+    if ((!isDataImage && !isLocalImage) || image.length > 300000) {
+      throw new Error("Produktbild muss eine lokale Shop-Datei oder ein gültiges Bild unter 300 KB sein.");
+    }
     result.push({
       sku,
       name: variantName,
@@ -64,7 +70,7 @@ function validateProduct(body) {
       stock,
       lowStock,
       active: variant.active !== false,
-      image: cleanText(variant.image || "", 500),
+      image,
       deliveryTime: cleanText(variant.deliveryTime || "", 160)
     });
   }
@@ -131,6 +137,7 @@ async function dbCatalog(pool) {
         category: row.category,
         brand: row.brand,
         fits: row.fits || [],
+        fitmentConfirmed: Array.isArray(row.fits) && row.fits.length > 0,
         active: row.active,
         variants: []
       });
@@ -203,16 +210,13 @@ export default async function handler(req, res) {
       const pool = getPool();
       return res.status(200).json(await dbCatalog(pool));
     } catch (error) {
-      if (error.statusCode === 503) {
-        const catalog = await seedCatalog();
-        return res.status(200).json({
-          products: catalog.products,
-          persistent: false,
-          notice: "Datenbank nicht eingerichtet: Änderungen werden nicht dauerhaft gespeichert."
-        });
-      }
       console.error("Katalog konnte nicht geladen werden:", error.code || "database_error");
-      return res.status(503).json({ error: "Persistenter Katalog ist derzeit nicht verfügbar." });
+      const catalog = await seedCatalog();
+      return res.status(200).json({
+        products: catalog.products,
+        persistent: false,
+        notice: "Produktkatalog aus Datei geladen. Für dauerhafte Änderungen Datenbank konfigurieren und Migration ausführen."
+      });
     }
   }
 

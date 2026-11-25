@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import pg from "pg";
 
 if (!process.env.DATABASE_URL) {
@@ -12,11 +12,23 @@ if (!process.env.DATABASE_URL) {
   });
   const client = await pool.connect();
   try {
-    const sql = await readFile(new URL("../api/migrations/001_commerce.sql", import.meta.url), "utf8");
-    await client.query("BEGIN");
-    await client.query(sql);
-    await client.query("COMMIT");
-    console.log("Migration 001_commerce.sql erfolgreich angewendet.");
+    const migrationsUrl = new URL("../api/migrations/", import.meta.url);
+    const migrations = (await readdir(migrationsUrl))
+      .filter((name) => /^\d+_[a-z0-9_-]+\.sql$/i.test(name))
+      .sort();
+    if (!migrations.length) throw new Error("Keine SQL-Migrationen gefunden.");
+    for (const name of migrations) {
+      try {
+        const sql = await readFile(new URL(name, migrationsUrl), "utf8");
+        await client.query("BEGIN");
+        await client.query(sql);
+        await client.query("COMMIT");
+        console.log(`Migration ${name} erfolgreich angewendet.`);
+      } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+      }
+    }
   } catch (error) {
     await client.query("ROLLBACK");
     console.error("Migration fehlgeschlagen:", error.code || "database_error");
