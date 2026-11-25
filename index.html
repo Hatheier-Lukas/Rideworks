@@ -181,9 +181,9 @@ input,textarea{width:100%;font:inherit;padding:.55rem .7rem;border:1px solid var
 </dialog>
 
 <dialog id="loginDlg" aria-labelledby="lt">
-  <h2 id="lt">Admin-Anmeldung nicht verfügbar</h2>
-  <p id="lerr" role="status">Die sichere Google-Anmeldung für das Administratorkonto ist noch nicht eingerichtet.</p>
-  <div class="acts"><button class="ghost" type="button" id="lcancel">Schließen</button></div>
+  <h2 id="lt">Mit Google anmelden</h2>
+  <p id="lerr" role="status">Du wirst zur sicheren Google-Anmeldung weitergeleitet.</p>
+  <div class="acts"><button class="ghost" type="button" id="lcancel">Schließen</button><button class="add" type="button" id="googleLogin">Mit Google anmelden</button></div>
 </dialog>
 
 <dialog id="prodDlg" aria-labelledby="pt">
@@ -275,11 +275,12 @@ $("#pdel").onclick=async()=>{
   if(b.dataset.sure!=="1"){b.dataset.sure="1";b.textContent="Wirklich löschen?";setTimeout(()=>{b.dataset.sure="";b.textContent="Löschen";},4000);return;}
   b.dataset.sure="";b.textContent="Löschen";
   try{
-    if(SEED.some(s=>s.id===cur))await put(cur,{deleted:true,created:Date.now()});
-    else if(db)await db.collection("products").doc(cur).delete();
-    else{remote=remote.filter(x=>x.id!==cur);render();}
+    const response=await fetch("/api/products?id="+encodeURIComponent(cur),{method:"DELETE"});
+    const result=await response.json().catch(()=>({error:"Serverantwort ungültig."}));
+    if(!response.ok)throw new Error(result.error||"Löschen fehlgeschlagen.");
+    remote=remote.filter(x=>x.id!==cur);render();
     $("#prodDlg").close();
-  }catch{toast("Löschen nicht erlaubt. Nur der Besitzer der Seite kann Produkte löschen.");}
+  }catch(error){toast(error.message||"Löschen fehlgeschlagen.");}
 };
 
 function toast(t){const el=$("#toast");el.textContent=t;if(!el.matches(":popover-open"))el.showPopover();clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidePopover(),2200);}
@@ -339,19 +340,40 @@ function vrow(v){
   d.innerHTML=`<label>Variante<input class="vn" autocomplete="off" placeholder="z. B. Schwarz"></label><label>Preis in €<input class="vp" type="number" min="0" step="0.01" inputmode="decimal"></label><label class="pick">Bild dieser Variante<input class="vi" type="file" accept="image/*"></label><img class="prev" alt="Vorschau" hidden><button class="ghost rm" type="button">Variante entfernen</button>`;
   d.querySelector(".vi").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{d.dataset.img=await shrink(f);const im=d.querySelector(".prev");im.src=d.dataset.img;im.hidden=false;err();}catch{err("Das Bild konnte nicht gelesen werden.");}};
   d.querySelector(".rm").onclick=()=>{if($("#vrows").children.length>1)d.remove();};
-  if(v){d.querySelector(".vn").value=v.name;d.querySelector(".vp").value=v.price;if(v.img){d.dataset.img=src(v.img);const im=d.querySelector(".prev");im.src=d.dataset.img;im.hidden=false;}}
+  if(v){d.dataset.sku=v.sku||"";d.querySelector(".vn").value=v.name;d.querySelector(".vp").value=v.price;if(v.img||v.image){d.dataset.img=v.img||v.image;const im=d.querySelector(".prev");im.src=src(d.dataset.img);im.hidden=false;}}
   $("#vrows").append(d);
 }
 let editId=null;
 async function put(id,data){
-  if(db)return db.collection("products").doc(id).set(data);
-  remote=[...remote.filter(x=>x.id!==id),{id,remote:1,...data}];render();toast("Nur bis zum Neuladen gespeichert.");
+  const existing=remote.find(x=>x.id===id);
+  const response=await fetch("/api/products",{
+    method:remote.some(x=>x.id===id)?"PUT":"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({id,...data,
+      variants:data.variants.map((variant,index)=>({
+        sku:variant.sku||existing?.variants[index]?.sku||`RW-${(id||("P"+Date.now())).toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,24)}-${index+1}`,
+        name:variant.name,
+        price:variant.price,
+        compareAtPrice:null,
+        stock:0,
+        lowStock:3,
+        active:true,
+        image:variant.img||"",
+        deliveryTime:""
+      }))
+    })
+  });
+  const result=await response.json().catch(()=>({error:"Serverantwort ungültig."}));
+  if(!response.ok)throw new Error(result.error||"Produkt konnte nicht gespeichert werden.");
+  remote=[...remote.filter(x=>x.id!==id),{id,remote:1,...data,active:true}];
+  render();
+  toast("Produkt dauerhaft gespeichert.");
 }
 function drawFits(s){$("#fits").innerHTML=[["*","Universal (alle Mopeds)"],...mopeds()].map(([id,n])=>`<label><input type="checkbox" value="${esc(id)}"${s.includes(id)?" checked":""}>${esc(n)}</label>`).join("");}
 function openForm(p){
   editId=p?p.id:null;
   $("#at").textContent=p?"Produkt bearbeiten":"Produkt hinzufügen";
-  $("#pn").value=p?p.name:"";$("#pd").value=p?p.desc||"":"";
+  $("#pn").value=p?p.name:"";$("#pd").value=p?p.description||p.desc||"":"";
   $("#vrows").innerHTML="";err();
   (p?p.variants:[null]).forEach(v=>vrow(v));
   drawFits(p?p.fits||["*"]:["*"]);
@@ -362,7 +384,7 @@ $("#addVar").onclick=vrow;
 $("#cancel").onclick=()=>$("#addDlg").close();
 $("#save").onclick=async()=>{
   const name=$("#pn").value.trim();
-  const variants=[...$("#vrows").children].map(r=>({name:r.querySelector(".vn").value.trim(),price:parseFloat(r.querySelector(".vp").value),img:r.dataset.img||""}));
+  const variants=[...$("#vrows"].children].map(r=>({sku:r.dataset.sku||"",name:r.querySelector(".vn").value.trim(),price:parseFloat(r.querySelector(".vp").value),img:r.dataset.img||""}));
   if(!name)return err("Gib dem Produkt einen Namen.");
   if(variants.some(v=>!v.name))return err("Jede Variante braucht einen Namen.");
   if(variants.some(v=>!Number.isFinite(v.price)||v.price<0))return err("Jede Variante braucht einen Preis.");
@@ -371,14 +393,25 @@ $("#save").onclick=async()=>{
   if(!fits.length)return err("Wähle mindestens ein Moped oder „Universal“.");
   const old=editId&&all().find(x=>x.id===editId),id=editId||"p"+Date.now().toString(36);
   const prod={name,desc:$("#pd").value.trim(),variants:variants.map(v=>{const k=Object.keys(IMG).find(k=>IMG[k]===v.img);return{...v,img:k?"@"+k:v.img};}),fits,created:old?.created||Date.now()};
-  try{await put(id,prod);}catch{return err("Speichern nicht erlaubt. Nur der Besitzer der Seite kann Produkte speichern.");}
+  try{await put(id,prod);}catch(error){return err(error.message||"Produkt konnte nicht gespeichert werden.");}
   $("#addDlg").close();
 };
 
 const valid=p=>p&&(p.deleted||(typeof p.name==="string"&&Array.isArray(p.variants)&&p.variants.length&&p.variants.every(v=>v&&Number.isFinite(v.price))));
-function setAdmin(){admin=false;store("adm","",true);$("#addBtn").hidden=true;$("#loginBtn").textContent="Admin-Login";}
-$("#loginBtn").onclick=()=>$("#loginDlg").showModal();
+async function refreshAdmin(){
+  try{
+    const r=await fetch("/api/auth/session",{cache:"no-store"});
+    const s=await r.json();
+    admin=Boolean(s.admin);
+  }catch{admin=false;}
+  $("#addBtn").hidden=!admin;
+  $("#loginBtn").textContent=admin?"Abmelden":"Mit Google anmelden";
+  render();
+}
+function setAdmin(){admin=false;$("#addBtn").hidden=true;$("#loginBtn").textContent="Mit Google anmelden";}
+$("#loginBtn").onclick=()=>{if(admin){fetch("/api/auth/session",{method:"DELETE"}).finally(refreshAdmin);}else location.assign("/api/auth/google/start");};
 $("#lcancel").onclick=()=>$("#loginDlg").close();
+$("#googleLogin").onclick=()=>location.assign("/api/auth/google/start");
 function drawMops(){const h=mopeds().map(([id,n])=>`<button class="chip" aria-pressed="${id===moped}" data-m="${esc(id)}">${esc(n)}</button>`).join("");$("#mopList").innerHTML=h;$("#startMops").innerHTML=h;}
 function pickMop(id){moped=id;store("moped",id);render();}
 $("#mopBtn").onclick=()=>{drawMops();$("#newMop").hidden=!admin;$("#mopDlg").showModal();};
@@ -396,13 +429,16 @@ function route(){
 }
 addEventListener("hashchange",route);
 document.querySelectorAll("img.lg").forEach(i=>i.src=LOGO);
-setAdmin(false);render();drawCart();route();
+setAdmin();refreshAdmin();drawCart();route();
 (async()=>{
   try{
-    if(!window.claude?.use)return;
-    const d=await claude.use("db");
-    if(d){db=d;db.collection("mopeds").orderBy("created").onSnapshot(s=>{customMop=s.docs.map(x=>[x.id,String(x.data().name||"")]).filter(m=>m[1]);render();},()=>{});db.collection("products").orderBy("created").onSnapshot(s=>{remote=s.docs.map(x=>({id:x.id,remote:1,...x.data()})).filter(valid);render();},()=>{});}
-  }catch{}
+    const r=await fetch("/api/products",{cache:"no-store"});
+    const catalog=await r.json();
+    if(r.ok&&Array.isArray(catalog.products)){
+      remote=catalog.products.map(p=>({id:p.id,remote:1,...p,variants:(p.variants||[]).map(v=>({name:v.name,sku:v.sku,price:Number(v.price),img:v.image||v.img||""}))}));
+      render();
+    }else toast(catalog.error||"Produktkatalog konnte nicht geladen werden.");
+  }catch{toast("Produktkatalog konnte nicht geladen werden.");}
 })();
 </script>
 </body>

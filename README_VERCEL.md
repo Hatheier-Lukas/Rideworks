@@ -6,7 +6,7 @@ Der bestehende Katalog und die vorhandenen Produktbilder bleiben erhalten. `prod
 
 Der Bestellendpunkt akzeptiert nur Produkt-ID und SKU; Namen, Preise, Versand und Summen stammen immer vom Server. Bestellungen und Positionen werden in PostgreSQL gespeichert. Bestand wird in derselben Datenbanktransaktion geprüft und vor Annahme abgezogen; unbekannter Bestand startet bei null und wird niemals als verfügbar angenommen. Eine idempotente Bestellkennung schützt vor doppelt abgesendeten Formularen.
 
-Zurzeit werden Versand nach Österreich (€ 4,90) und Deutschland (€ 7,90), Gratisversand ab € 75 Warenwert, Vorkasse/Banküberweisung und Barzahlung ausschließlich bei Abholung unterstützt. PayPal, Google-Kundenkonten, Google-Admin-OAuth, Admin-Bestellverwaltung, Support-Tickets, Bewertungen und weitere Shop-Workflows sind noch nicht implementiert. Es gibt keine öffentliche Admin- oder Lagerpflege-API. Nicht im Serverkatalog enthaltene Produkte (zum Beispiel aus einer früheren externen Datenquelle) werden absichtlich nicht zum Kauf angenommen, bis ihre bestätigten Preise und SKUs in `products.json` gepflegt sind.
+Zurzeit werden Versand nach Österreich (€ 4,90) und Deutschland (€ 7,90), Gratisversand ab € 75 Warenwert, Vorkasse/Banküberweisung und Barzahlung ausschließlich bei Abholung unterstützt. Google-Admin-OAuth und persistente Produktänderungen sind vorbereitet. PayPal, Google-Kundenkonten, vollständiges Admin-Bestell-Dashboard, Support-Tickets, Bewertungen und weitere Shop-Workflows sind noch nicht implementiert. Nicht im Serverkatalog enthaltene Produkte werden absichtlich nicht zum Kauf angenommen, bis ihre bestätigten Preise und SKUs gepflegt sind.
 
 ## Voraussetzungen und Installation
 
@@ -29,6 +29,11 @@ Erforderliche Variablen:
 | `DATABASE_SSL` | Standard ist TLS mit Zertifikatsprüfung; nur für lokale DB explizit `false` |
 | `RESEND_API_KEY` | Serverseitiger Resend-Zugang |
 | `MAIL_FROM` | Verifizierte Absenderadresse, z. B. `RIDEWORKS <shop@deine-domain.at>` |
+| `GOOGLE_CLIENT_ID` | OAuth-Webclient-ID aus Google Cloud |
+| `GOOGLE_CLIENT_SECRET` | OAuth-Webclient-Geheimnis |
+| `APP_URL` | Öffentliche Shop-URL, z. B. `https://rideworks.example` |
+| `SESSION_SECRET` | Langes zufälliges Geheimnis für signierte HttpOnly-Cookies |
+| `GOOGLE_ADMIN_EMAIL` | Optional; Standard ist `hatheierlukas@gmail.com` |
 | `BANK_ACCOUNT_NAME` | Kontoinhaber in den Zahlungsinformationen |
 | `BANK_IBAN` | Empfängerkonto für Vorkasse |
 | `BANK_BIC` | Optionaler BIC |
@@ -55,7 +60,7 @@ Das Repository verwendet Vercel Functions unter `api/`. Importiere es als Vercel
 
 ## Vor Produktionsfreigabe noch erforderlich
 
-1. Google OAuth-Endpunkte, sichere Session-Cookies und serverseitige Admin-Prüfung ausschließlich für `hatheierlukas@gmail.com`; die bisherige Frontend-Passwortprüfung wurde entfernt und kann keinen Adminzugriff gewähren.
+1. Google OAuth-Konfiguration: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `APP_URL`, `SESSION_SECRET` und optional `GOOGLE_ADMIN_EMAIL`. Standard-Admin ist `hatheierlukas@gmail.com`. In Google Cloud muss die Callback-URL `https://<Domain>/api/auth/google/callback` als autorisierte Redirect-URI eingetragen sein. Das bestehende Frontend-Passwort wurde entfernt.
 2. Geschütztes Admin-Dashboard für Bestellungen, Bestands-/Katalogpflege, Support und Moderation.
 3. PayPal Orders API mit serverseitiger Erfassung und Verifikation; derzeit nicht auswählbar.
 4. Persistente E-Mail-Warteschlange und Wiederholungs-/Monitoringprozess für fehlgeschlagene E-Mails.

@@ -1,13 +1,10 @@
 import { randomUUID } from "node:crypto";
-import { readFile } from "node:fs/promises";
 import { Resend } from "resend";
 import { normalizeCheckout } from "../lib/commerce.js";
 import { getPool } from "../lib/database.js";
+import { loadCatalog } from "../lib/catalog.js";
 
-const catalog = JSON.parse(
-  await readFile(new URL("../products.json", import.meta.url), "utf8")
-);
-const MAIL_TO = "hatheierlukas@gmail.com";
+const MAIL_TO = "shop.rideworks@gmail.com";
 
 function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, (char) => ({
@@ -148,6 +145,7 @@ export default async function handler(req, res) {
 
   let order;
   try {
+    const catalog = await loadCatalog();
     order = normalizeCheckout(body, catalog);
   } catch (error) {
     return respond(res, error.statusCode || 400, { error: error.message });

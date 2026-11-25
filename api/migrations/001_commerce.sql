@@ -36,6 +36,31 @@ CREATE TABLE IF NOT EXISTS order_items (
 CREATE INDEX IF NOT EXISTS orders_created_at_idx ON orders (created_at DESC);
 CREATE INDEX IF NOT EXISTS orders_customer_email_idx ON orders (customer_email);
 
+CREATE TABLE IF NOT EXISTS products (
+  id text PRIMARY KEY,
+  name text NOT NULL,
+  description text NOT NULL DEFAULT '',
+  category text NOT NULL DEFAULT '',
+  brand text NOT NULL DEFAULT '',
+  fits jsonb NOT NULL DEFAULT '[]'::jsonb,
+  active boolean NOT NULL DEFAULT false,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS product_variants (
+  sku text PRIMARY KEY,
+  product_id text NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+  name text NOT NULL,
+  price_cents integer CHECK (price_cents IS NULL OR price_cents >= 0),
+  compare_at_cents integer CHECK (compare_at_cents IS NULL OR compare_at_cents >= 0),
+  stock integer NOT NULL DEFAULT 0 CHECK (stock >= 0),
+  low_stock_threshold integer NOT NULL DEFAULT 3 CHECK (low_stock_threshold >= 0),
+  active boolean NOT NULL DEFAULT true,
+  image text NOT NULL DEFAULT '',
+  delivery_time text NOT NULL DEFAULT ''
+);
+
 INSERT INTO inventory (sku, stock) VALUES
   ('RW-RELAIS-1', 0),
   ('RW-SPIEGEL-1', 0),
