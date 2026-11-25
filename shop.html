@@ -106,6 +106,9 @@ h3{font:700 1.45rem/1.1 "Barlow Condensed",sans-serif;margin:0}
 .about-points li{padding:.75rem;border-left:3px solid var(--amber);background:var(--bg)}
 .category-filter{display:flex;gap:.45rem;flex-wrap:wrap;margin:0 0 1.2rem}
 .category-filter button[aria-pressed="true"]{background:var(--amber);border-color:var(--amber);color:var(--on-amber);font-weight:700}
+.catalog-tools{display:flex;align-items:center;gap:.55rem;flex-wrap:wrap}
+.catalog-tools input[type=file]{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+.catalog-tools .ghost,.catalog-tools .btn{min-height:40px}
 .shipping-note{padding:.65rem .8rem;border:1px solid var(--line);border-radius:6px;color:var(--muted);font-size:.9rem}
 .payment-badges{display:flex;gap:.4rem;flex-wrap:wrap;margin:.6rem 0;color:var(--muted);font-size:.82rem}
 .payment-badge{border:1px solid var(--line);border-radius:4px;padding:.2rem .45rem}
@@ -259,7 +262,12 @@ input,textarea{width:100%;font:inherit;padding:.55rem .7rem;border:1px solid var
     <section class="grid" id="feat" aria-label="Beliebte Produkte"></section>
   </div>
   <div id="vShop" hidden>
-  <div class="bar"><h2 class="sec">Shop</h2><button class="btn" id="addBtn" hidden>Produkt hinzufügen</button></div>
+  <div class="bar"><h2 class="sec">Shop</h2><div class="catalog-tools" id="catalogTools" hidden>
+    <button class="btn" id="addBtn" type="button">Produkt hinzufügen</button>
+    <button class="ghost" id="catalogImportButton" type="button">Excel-Katalog importieren (.xlsx)</button>
+    <input id="catalogImportFile" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+    <button class="ghost" id="catalogExportButton" type="button">Aktuellen Katalog als Excel (.xlsx) exportieren</button>
+  </div></div>
   <div class="category-filter" id="shopCategories" role="group" aria-label="Produktbereich wählen">
     <button class="chip" type="button" data-category="Alle" aria-pressed="true">Alle</button>
     <button class="chip" type="button" data-category="Motor &amp; Kühlung" aria-pressed="false">Motor &amp; Kühlung</button>
@@ -643,7 +651,7 @@ document.addEventListener("click",event=>{
   $("#legalDlg").showModal();
 });
 $("#legalClose").onclick=()=>$("#legalDlg").close();
-const src=u=>{u=u&&u[0]==="@"?IMG[u.slice(1)]:u;return /^(data:image\/|\/_blob\/)/.test(u||"")||/^\/images\/[a-z0-9-]+\.(?:jpe?g|png|webp|svg)$/i.test(u||"")?u:PH;};
+const src=u=>{u=u&&u[0]==="@"?IMG[u.slice(1)]:u;if(/^(data:image\/|\/_blob\/)/.test(u||"")||/^\/images\/[a-z0-9-]+\.(?:jpe?g|png|webp|svg)$/i.test(u||""))return u;try{const url=new URL(u);if(url.protocol==="https:"&&!url.username&&!url.password)return url.href;}catch{}return PH;};
 const MOPEDS=[["beta-rr50","Beta RR 50"],["derbi-senda","Derbi Senda"],["rieju-mrt","Rieju MRT 50"],["aprilia-rx","Aprilia RX 50"],["aprilia-sx","Aprilia SX 50"],["yamaha-dt","Yamaha DT 50"],["yamaha-tzr","Yamaha TZR 50"],["gilera-smt","Gilera SMT 50"],["peugeot-xps","Peugeot XPS 50"],["sherco-sm","Sherco SM 50"],["ksr-tr","KSR TR 50"]];
 const TECHNICAL_META={
   relais:{type:"LED-Blinkrelais",area:"Elektrik / Blinktechnik",voltage:"12 V",connection:"Gewinde nicht zutreffend; 2-polig, Steckertyp und Pinbelegung nicht angegeben",frequency:"Einstellbar, 50–200 Zyklen/Minute",load:"21 W × 2 + 3,4 W; nicht näher spezifiziert"},
@@ -668,13 +676,20 @@ const store=(k,v,sess)=>{try{const s=sess?sessionStorage:localStorage;v?s.setIte
 try{moped=localStorage.getItem("moped")||"";}catch{}
 const all=()=>{const m=new Map(SEED.map(p=>[p.id,p]));remote.forEach(p=>m.set(p.id,p));return[...m.values()].filter(p=>!p.deleted);};
 
-const browseCategoryFor=p=>p.browseCategory||({
-  thermometer:"Motor & Kühlung",
-  relais:"Cockpit & Elektronik",
-  "usb-charger":"Cockpit & Elektronik",
-  "usb-outlet":"Cockpit & Elektronik",
-  "phone-holder":"Cockpit & Elektronik"
-}[p.id]||"Optik & Zubehör");
+const browseCategoryFor=p=>{
+  if(p.browseCategory)return p.browseCategory;
+  const category=String(p.category||"").toLocaleLowerCase("de-AT");
+  if(/motor|kühl|engine|temperatur/.test(category))return "Motor & Kühlung";
+  if(/cockpit|elektr|beleucht|anzeige/.test(category))return "Cockpit & Elektronik";
+  if(/optik|zubehör|zubehoer|accessor/.test(category))return "Optik & Zubehör";
+  return ({
+    thermometer:"Motor & Kühlung",
+    relais:"Cockpit & Elektronik",
+    "usb-charger":"Cockpit & Elektronik",
+    "usb-outlet":"Cockpit & Elektronik",
+    "phone-holder":"Cockpit & Elektronik"
+  }[p.id]||"Optik & Zubehör");
+};
 const shown=()=>all()
   .filter(p=>p.fitmentConfirmed===false||!moped||(p.fits||["*"]).some(f=>f==="*"||f===moped))
   .filter(p=>browseCategory==="Alle"||browseCategoryFor(p)===browseCategory);
@@ -741,7 +756,7 @@ function renderTechnicalSpecs(product,variant){
     ["Glasfarbe",displayedSpecValue(technical.glassColor)],
     ["Gewinde / Anschluss",displayedSpecValue(technical.threadOrConnection)],
     ["Gewicht",displayedSpecValue(technical.weight)],
-    ["Passform",fitment]
+    ["Passform",product.compatibility?`${product.compatibility} (vor Bestellung prüfen)`:fitment]
   ];
   if(String(technical.frequency||"").trim())rows.push(["Blinkfrequenz",technical.frequency]);
   if(String(technical.load||"").trim())rows.push(["Angegebene Last",technical.load]);
@@ -783,7 +798,7 @@ function paintProd(){
   $("#padd").textContent=v.stock===0?"Ausverkauft":$("#padd").disabled?"Noch nicht verfügbar":"In den Warenkorb";
   $("#padm").hidden=!admin;
   const f=p.fits||["*"];
-  $("#pfit").textContent=p.fitmentConfirmed===false?"Fahrzeug-Kompatibilität nicht bestätigt – bitte vor Bestellung prüfen.":f.includes("*")?"Passt für alle Mopeds":"Passt für: "+f.map(x=>(mopeds().find(m=>m[0]===x)||[,x])[1]).join(", ");
+  $("#pfit").textContent=p.compatibility?`Kompatibilität laut Katalog: ${p.compatibility} – bitte vor Bestellung prüfen.`:p.fitmentConfirmed===false?"Fahrzeug-Kompatibilität nicht bestätigt – bitte vor Bestellung prüfen.":f.includes("*")?"Passt für alle Mopeds":"Passt für: "+f.map(x=>(mopeds().find(m=>m[0]===x)||[,x])[1]).join(", ");
   const showRelayContent=p.id==="relais";
   $("#relayDetails").hidden=false;
   $("#relayDetails").classList.toggle("relay-details--table-only",!showRelayContent);
@@ -908,7 +923,7 @@ async function put(id,data){
   const response=await fetch("/api/products",{
     method:remote.some(x=>x.id===id)?"PUT":"POST",
     headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({id,name:data.name,description:data.desc,category:existing?.category||"",brand:data.brand,technicalDetails:data.technicalDetails,active:true,fits:data.fits,
+    body:JSON.stringify({id,name:data.name,description:data.desc,category:existing?.category||"",subcategory:existing?.subcategory||"",compatibility:existing?.compatibility||"",brand:data.brand,technicalDetails:data.technicalDetails,active:true,fits:data.fits,
       variants:data.variants.map((variant,index)=>{
         const previous=existing?.variants.find(item=>item.sku===variant.sku)||existing?.variants[index];
         return {
@@ -935,7 +950,7 @@ async function put(id,data){
       img:variant.img||"",image:variant.img||"",deliveryTime:previous?.deliveryTime||""};
   });
   remote=[...remote.filter(x=>x.id!==id),{...existing,id,remote:1,name:data.name,description:data.desc,desc:data.desc,
-    category:existing?.category||"",brand:data.brand,technicalDetails:data.technicalDetails,active:true,fits:data.fits,variants}];
+    category:existing?.category||"",subcategory:existing?.subcategory||"",compatibility:existing?.compatibility||"",brand:data.brand,technicalDetails:data.technicalDetails,active:true,fits:data.fits,variants}];
   render();
   if(cur===id&&location.hash.startsWith("#product/"))paintProd();
   toast(result.notice||result.backupWarning||(result.localOnly?"Nur lokal gespeichert.":"Produkt dauerhaft gespeichert."));
@@ -966,6 +981,45 @@ function openForm(p){
   $("#addDlg").showModal();
 }
 $("#addBtn").onclick=()=>openForm(null);
+$("#catalogImportButton").onclick=()=>$("#catalogImportFile").click();
+$("#catalogImportFile").onchange=async()=>{
+  const input=$("#catalogImportFile"),file=input.files?.[0];
+  if(!file)return;
+  const button=$("#catalogImportButton");
+  if(!file.name.toLocaleLowerCase("de-AT").endsWith(".xlsx")){toast("Bitte eine .xlsx-Datei auswählen.");input.value="";return;}
+  if(file.size>4*1024*1024){toast("Die XLSX-Datei darf höchstens 4 MB groß sein.");input.value="";return;}
+  button.disabled=true;button.textContent="Import läuft …";$("#catalogNotice").textContent="Excel-Katalog wird geprüft und gespeichert …";
+  try{
+    const response=await fetch("/api/products/import",{method:"POST",headers:{"Content-Type":"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"},body:file,credentials:"same-origin"});
+    const result=await response.json().catch(()=>({error:"Serverantwort ungültig."}));
+    if(!response.ok)throw new Error(result.error||"Excel-Katalogimport fehlgeschlagen.");
+    const summary=`${result.updated} Produkte aktualisiert, ${result.created} neue Produkte hinzugefügt.`;
+    $("#catalogNotice").textContent=summary;
+    toast(result.localOnly?`${summary} Lokal gespeichert.`:summary);
+    await loadCatalog();
+    $("#catalogNotice").textContent=summary;
+  }catch(error){
+    $("#catalogNotice").textContent=error.message||"Excel-Katalogimport fehlgeschlagen.";
+    toast($("#catalogNotice").textContent);
+  }finally{
+    input.value="";button.disabled=false;button.textContent="Excel-Katalog importieren (.xlsx)";
+  }
+};
+$("#catalogExportButton").onclick=async()=>{
+  const button=$("#catalogExportButton");
+  button.disabled=true;
+  try{
+    const response=await fetch("/api/products/export",{cache:"no-store",credentials:"same-origin"});
+    if(!response.ok){
+      const result=await response.json().catch(()=>({error:"Katalogexport fehlgeschlagen."}));
+      throw new Error(result.error||"Katalogexport fehlgeschlagen.");
+    }
+    const blob=await response.blob(),url=URL.createObjectURL(blob),link=document.createElement("a");
+    link.href=url;link.download="Rideworks_Artikelkatalog.xlsx";link.click();URL.revokeObjectURL(url);
+    toast("Excel-Katalog wurde heruntergeladen.");
+  }catch(error){toast(error.message||"Excel-Katalogexport fehlgeschlagen.");}
+  finally{button.disabled=false;}
+};
 $("#addVar").onclick=()=>vrow(null);
 $("#addTechRow").onclick=()=>technicalExtraRow();
 $("#cancel").onclick=()=>$("#addDlg").close();
@@ -1008,11 +1062,12 @@ async function refreshAdmin(){
     admin=Boolean(s.admin);
   }catch{admin=false;}
   $("#addBtn").hidden=!admin;
+  $("#catalogTools").hidden=!admin;
   $("#loginBtn").textContent=admin?"Abmelden":"Anmelden";
   render();
   if(location.hash.startsWith("#product/"))route();
 }
-function setAdmin(){admin=false;$("#addBtn").hidden=true;$("#loginBtn").textContent="Anmelden";}
+function setAdmin(){admin=false;$("#addBtn").hidden=true;$("#catalogTools").hidden=true;$("#loginBtn").textContent="Anmelden";}
 $("#loginBtn").onclick=()=>{if(admin){fetch("/api/auth/session",{method:"DELETE"}).finally(refreshAdmin);}else{$("#lerr").textContent="";$("#loginDlg").showModal();}};
 $("#lcancel").onclick=()=>{$("#loginDlg").close();$("#adminPassword").value="";};
 $("#googleLogin").onclick=()=>location.assign("/api/auth/google/start");
@@ -1062,7 +1117,7 @@ function route(){
 }
 addEventListener("hashchange",route);
 setAdmin();render();refreshAdmin();drawCart();route();
-(async()=>{
+async function loadCatalog(){
   try{
     const r=await fetch("/api/products",{cache:"no-store"});
     const catalog=await r.json();
@@ -1074,9 +1129,13 @@ setAdmin();render();refreshAdmin();drawCart();route();
       $("#addBtn").hidden=!admin;
       if(location.hash.startsWith("#product/"))route();
       $("#catalogNotice").textContent=catalog.notice||(backupOnly?"Datenbank nicht verfügbar; lokale Sicherung ist schreibgeschützt.":"");
-    }else toast(catalog.error||"Produktkatalog konnte nicht geladen werden.");
+      return true;
+    }
+    toast(catalog.error||"Produktkatalog konnte nicht geladen werden.");
   }catch{toast("Produktkatalog konnte nicht geladen werden.");}
-})();
+  return false;
+}
+loadCatalog();
 </script>
 </body>
 </html>

@@ -1,0 +1,3 @@
+ALTER TABLE products
+  ADD COLUMN IF NOT EXISTS subcategory text NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS compatibility text NOT NULL DEFAULT '';

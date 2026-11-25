@@ -3,12 +3,13 @@ import { stat } from "node:fs/promises";
 import { createReadStream } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { randomBytes } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { COOKIE_NAME, getSession, requireAdmin, sign } from "./lib/session.js";
 import { isValidPasswordHash, verifyPassword } from "./lib/password.js";
 import { createLocalStore } from "./lib/local-store.js";
 import { validateProduct } from "./api/products.js";
 import { loadLocalEnvironment } from "./lib/load-local-env.js";
+import { createCatalogWorkbook, MAX_CATALOG_UPLOAD_BYTES, parseCatalogWorkbook } from "./lib/xlsx-catalog.js";
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 const store = createLocalStore(path.join(root, "data"), path.join(root, "products.json"));
@@ -72,8 +73,139 @@ async function readJson(req) {
   }
 }
 
+async function readBuffer(req) {
+  const chunks = [];
+  let size = 0;
+  for await (const chunk of req) {
+    size += chunk.length;
+    if (size > MAX_CATALOG_UPLOAD_BYTES) {
+      throw Object.assign(new Error("Die XLSX-Datei darf höchstens 4 MB groß sein."), { statusCode: 413 });
+    }
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks, size);
+}
+
 async function handleApi(req, res, url) {
   if (!validOrigin(req)) return sendJson(res, 403, { error: "Ungültige Anfragequelle." });
+
+  if (url.pathname === "/api/products/import") {
+    if (req.method !== "POST") {
+      res.setHeader("Allow", "POST");
+      return sendJson(res, 405, { error: "Methode nicht erlaubt." });
+    }
+    try {
+      requireAdmin(req);
+    } catch (error) {
+      return sendJson(res, error.statusCode || 401, { error: error.message });
+    }
+    try {
+      const rows = parseCatalogWorkbook(await readBuffer(req));
+      const catalog = await store.listProducts();
+      const bySku = new Map(catalog.flatMap((product) =>
+        (product.variants || []).map((variant) => [variant.sku, product])
+      ));
+      let updated = 0;
+      let created = 0;
+      for (const row of rows) {
+        const existing = bySku.get(row.sku);
+        const variants = (existing?.variants || []).map((variant) => {
+          const current = variant.sku === row.sku;
+          return {
+            sku: variant.sku,
+            name: variant.name || "Standard",
+            price: current ? row.priceCents / 100 : variant.price,
+            compareAtPrice: current ? (row.compareAtCents === null ? null : row.compareAtCents / 100) : variant.compareAtPrice,
+            stock: current ? row.stock : variant.stock,
+            lowStock: Number.isInteger(variant.lowStock) ? variant.lowStock : 3,
+            active: current ? row.active : variant.active !== false,
+            image: current ? row.image : variant.image || variant.img || "",
+            deliveryTime: variant.deliveryTime || ""
+          };
+        });
+        if (!existing) {
+          variants.push({
+            sku: row.sku,
+            name: "Standard",
+            price: row.priceCents / 100,
+            compareAtPrice: row.compareAtCents === null ? null : row.compareAtCents / 100,
+            stock: row.stock,
+            lowStock: 3,
+            active: row.active,
+            image: row.image,
+            deliveryTime: ""
+          });
+        }
+        const product = validateProduct({
+          id: existing?.id || `xlsx-${randomUUID()}`,
+          name: row.name,
+          description: row.description,
+          category: row.category,
+          subcategory: row.subcategory,
+          compatibility: row.compatibility,
+          brand: existing?.brand || "",
+          technicalDetails: existing?.technicalDetails || {},
+          fits: existing?.fits || [],
+          active: row.active,
+          variants
+        });
+        const saved = await store.saveProduct(product);
+        await store.updateInventory(row.sku, row.stock);
+        const currentProduct = {
+          ...saved,
+          variants: saved.variants.map((variant) => variant.sku === row.sku
+            ? { ...variant, stock: row.stock }
+            : variant)
+        };
+        for (const variant of currentProduct.variants) bySku.set(variant.sku, currentProduct);
+        if (existing) updated++;
+        else created++;
+      }
+      return sendJson(res, 200, { ok: true, updated, created, total: rows.length, localOnly: true });
+    } catch (error) {
+      if (error.statusCode) return sendJson(res, error.statusCode, { error: error.message });
+      console.error("Lokaler Excel-Katalogimport fehlgeschlagen.");
+      return sendJson(res, 400, { error: error.message || "Excel-Katalog konnte nicht importiert werden." });
+    }
+  }
+
+  if (url.pathname === "/api/products/export") {
+    if (req.method !== "GET") {
+      res.setHeader("Allow", "GET");
+      return sendJson(res, 405, { error: "Methode nicht erlaubt." });
+    }
+    try {
+      requireAdmin(req);
+    } catch (error) {
+      return sendJson(res, error.statusCode || 401, { error: error.message });
+    }
+    try {
+      const products = await store.listProducts();
+      const rows = products.flatMap((product) => (product.variants || []).map((variant) => ({
+        sku: variant.sku,
+        category: product.category || "",
+        subcategory: product.subcategory || "",
+        name: product.name,
+        description: product.description || "",
+        compatibility: product.compatibility || "",
+        priceCents: variant.price == null ? null : Math.round(Number(variant.price) * 100),
+        compareAtCents: variant.compareAtPrice == null ? null : Math.round(Number(variant.compareAtPrice) * 100),
+        stock: variant.stock ?? 0,
+        active: product.active !== false && variant.active !== false,
+        image: variant.image || variant.img || ""
+      })));
+      const workbook = createCatalogWorkbook(rows);
+      res.writeHead(200, {
+        "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "Content-Disposition": 'attachment; filename="Rideworks_Artikelkatalog.xlsx"',
+        "Content-Length": workbook.length,
+        "Cache-Control": "no-store"
+      });
+      return res.end(workbook);
+    } catch {
+      return sendJson(res, 503, { error: "Der lokale Katalog konnte nicht exportiert werden." });
+    }
+  }
 
   if (url.pathname === "/api/products") {
     if (req.method === "GET") {

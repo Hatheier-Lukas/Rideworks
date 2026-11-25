@@ -18,7 +18,9 @@ const product = {
 test("validates and cleans editable technical product details", () => {
   const result = validateProduct({
     ...product,
-    variants: [{ ...product.variants[0], sku: "SPEC-TEST-NEW", previousSku: "SPEC-TEST-1" }],
+    subcategory: "  Elektronik ",
+    compatibility: "  Derbi D50B0, Minarelli AM6  ",
+    variants: [{ ...product.variants[0], image: "https://images.example.com/product.jpg", sku: "SPEC-TEST-NEW", previousSku: "SPEC-TEST-1" }],
     technicalDetails: {
       productType: "  LED-Relais\n",
       weight: "35 g",
@@ -29,6 +31,9 @@ test("validates and cleans editable technical product details", () => {
   assert.equal(result.technicalDetails.weight, "35 g");
   assert.deepEqual(result.technicalDetails.extra, [{ label: "Anschluss", value: "2-polig" }]);
   assert.equal(result.variants[0].previousSku, "SPEC-TEST-1");
+  assert.equal(result.subcategory, "Elektronik");
+  assert.equal(result.compatibility, "Derbi D50B0, Minarelli AM6");
+  assert.equal(result.variants[0].image, "https://images.example.com/product.jpg");
 });
 
 test("rejects invalid or oversized editable technical details", () => {
@@ -44,4 +49,8 @@ test("rejects invalid or oversized editable technical details", () => {
     ...product,
     technicalDetails: { extra: Array.from({ length: 31 }, (_, index) => ({ label: `Label ${index}`, value: "Value" })) }
   }), /höchstens 30/);
+  assert.throws(() => validateProduct({
+    ...product,
+    variants: [{ ...product.variants[0], image: "http://images.example.com/product.jpg" }]
+  }), /Produktbild/);
 });

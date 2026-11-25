@@ -8,6 +8,12 @@ Der Bestellendpunkt akzeptiert nur Produkt-ID und SKU; Namen, Preise, Versand un
 
 Zurzeit werden Versand nach Österreich und Deutschland für jeweils € 4,90, Gratisversand ab € 50 Warenwert, Vorkasse/Banküberweisung und Barzahlung ausschließlich bei Abholung unterstützt. Der Admin kann sich über serverseitig bestätigtes Google-OAuth oder den per Umgebungsvariablen konfigurierten scrypt-Passwort-Login anmelden; Produktänderungen werden in PostgreSQL gespeichert. PayPal, Google-Kundenkonten, vollständiges Admin-Bestell-Dashboard, Support-Tickets, Bewertungen und weitere Shop-Workflows sind noch nicht implementiert. Nicht im Serverkatalog enthaltene Produkte werden absichtlich nicht zum Kauf angenommen, bis ihre bestätigten Preise und SKUs gepflegt sind.
 
+## Excel-Katalog
+
+Nach Admin-Anmeldung im Shop unter „Excel-Katalog importieren (.xlsx)“ eine XLSX-Datei mit dem Tabellenblatt `Produkte` hochladen. Der Import erwartet die Spalten `Artikelnummer`, `Hauptkategorie`, `Unterkategorie`, `Produktname`, `Kurzbeschreibung`, `Kompatibilität`, `Preis_EUR`, `UVP_EUR`, `Lagerbestand`, `Aktiv` und `Bild_URL`. `Aktiv` akzeptiert `JA` oder `NEIN`; Bildadressen müssen HTTPS-URLs oder lokale Pfade unter `/images/` sein. Uploads sind auf 4 MB und 5.000 Produktzeilen begrenzt. Formeln werden abgewiesen. Artikelnummern werden als SKUs verwendet; vorhandene SKUs aktualisieren ihr Produkt und ihre Variante, neue SKUs werden als neues Produkt angelegt. Der optionale Excel-Export enthält den aktuellen Katalog.
+
+Vor dem Einsatz auf Vercel die Migration `004_excel_catalog_fields.sql` mit `npm run db:migrate` anwenden. Sie ergänzt Unterkategorie und Kompatibilität in der Produkttabelle. Der lokale Entwicklungsserver unterstützt dieselben Import-/Exportaktionen und speichert Änderungen unter `data/`.
+
 ## Voraussetzungen und Installation
 
 - Node.js 20 oder neuer

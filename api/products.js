@@ -106,8 +106,13 @@ export function validateProduct(body) {
     const image = typeof variant.image === "string" ? variant.image : "";
     const isDataImage = /^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(image);
     const isLocalImage = image === "" || /^\/images\/[a-z0-9-]+\.(?:jpe?g|png|webp|svg)$/i.test(image);
-    if ((!isDataImage && !isLocalImage) || image.length > 300000) {
-      throw new Error("Produktbild muss eine lokale Shop-Datei oder ein gültiges Bild unter 300 KB sein.");
+    let isRemoteImage = false;
+    try {
+      const parsed = new URL(image);
+      isRemoteImage = parsed.protocol === "https:" && !parsed.username && !parsed.password;
+    } catch {}
+    if ((!isDataImage && !isLocalImage && !isRemoteImage) || image.length > 300000) {
+      throw new Error("Produktbild muss eine lokale Shop-Datei, HTTPS-Adresse oder ein gültiges Bild unter 300 KB sein.");
     }
     result.push({
       sku,
@@ -127,6 +132,8 @@ export function validateProduct(body) {
     name,
     description: cleanText(body.description || "", 2000),
     category: cleanText(body.category || "", 100),
+    subcategory: cleanText(body.subcategory || "", 100),
+    compatibility: cleanText(body.compatibility || "", 500),
     brand: cleanText(body.brand || "", 100),
     technicalDetails: validateTechnicalDetails(body.technicalDetails),
     fits: Array.isArray(body.fits) ? body.fits.map((fit) => cleanText(fit, 100)).filter(Boolean).slice(0, 100) : [],
@@ -137,7 +144,7 @@ export function validateProduct(body) {
 
 export async function dbCatalog(pool) {
   const products = await pool.query(`
-    SELECT id, name, description, category, brand, fits, active, created_at, updated_at
+    SELECT id, name, description, category, subcategory, compatibility, brand, fits, active, created_at, updated_at
     FROM products
     ORDER BY name
   `);
@@ -150,6 +157,8 @@ export async function dbCatalog(pool) {
       name: product.name,
       description: product.description,
       category: "",
+      subcategory: "",
+      compatibility: "",
       brand: "",
       technicalDetails: product.technicalDetails || {},
       fits: product.fits || [],
@@ -168,7 +177,8 @@ export async function dbCatalog(pool) {
     });
   }
   const result = await pool.query(`
-    SELECT p.id, p.name, p.description, p.category, p.brand, p.technical_details, p.fits, p.active,
+    SELECT p.id, p.name, p.description, p.category, p.subcategory, p.compatibility,
+           p.brand, p.technical_details, p.fits, p.active,
            p.created_at, p.updated_at,
            v.sku, v.name AS variant_name, v.price_cents, v.compare_at_cents,
            v.stock, v.low_stock_threshold, v.active AS variant_active,
@@ -185,6 +195,8 @@ export async function dbCatalog(pool) {
         name: row.name,
         description: row.description,
         category: row.category,
+        subcategory: row.subcategory,
+        compatibility: row.compatibility,
         brand: row.brand,
         technicalDetails: row.technical_details || {},
         fits: row.fits || [],
@@ -215,14 +227,17 @@ export async function upsertProduct(pool, product) {
   try {
     await client.query("BEGIN");
     await client.query(`
-      INSERT INTO products (id, name, description, category, brand, fits, technical_details, active, updated_at)
-      VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb,$8,now())
+      INSERT INTO products
+        (id, name, description, category, subcategory, compatibility, brand, fits, technical_details, active, updated_at)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10,now())
       ON CONFLICT (id) DO UPDATE SET
         name=EXCLUDED.name, description=EXCLUDED.description, category=EXCLUDED.category,
+        subcategory=EXCLUDED.subcategory, compatibility=EXCLUDED.compatibility,
         brand=EXCLUDED.brand, fits=EXCLUDED.fits, technical_details=EXCLUDED.technical_details,
         active=EXCLUDED.active, updated_at=now()
-    `, [product.id, product.name, product.description, product.category, product.brand,
-        JSON.stringify(product.fits), JSON.stringify(product.technicalDetails), product.active]);
+    `, [product.id, product.name, product.description, product.category, product.subcategory,
+        product.compatibility, product.brand, JSON.stringify(product.fits),
+        JSON.stringify(product.technicalDetails), product.active]);
 
     const existingVariants = await client.query(
       "SELECT sku, stock, low_stock_threshold FROM product_variants WHERE product_id = $1",
