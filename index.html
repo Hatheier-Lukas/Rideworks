@@ -70,8 +70,6 @@ h3{font:700 1.45rem/1.1 "Barlow Condensed",sans-serif;margin:0}
 .top nav{display:flex;gap:.2rem;flex-wrap:wrap}
 .co{display:flex;justify-content:space-between;gap:1rem;padding:.45rem 0;border-bottom:1px solid var(--line)}
 .two{display:grid;grid-template-columns:110px 1fr;gap:.6rem}
-#coOut p{margin:.8rem 0 .5rem;font-size:.9rem}
-#coOut textarea{margin-bottom:.5rem;font-size:.85rem}
 .nl{color:var(--on-head);text-decoration:none;padding:.4rem .8rem;border-bottom:3px solid transparent;font-weight:600}
 .nl:hover{background:rgba(255,255,255,.1)}
 .nl[aria-current="page"]{border-bottom-color:var(--amber)}
@@ -158,22 +156,20 @@ input,textarea{width:100%;font:inherit;padding:.55rem .7rem;border:1px solid var
 <dialog id="coDlg" aria-labelledby="cot">
   <h2 id="cot">Bestellung senden</h2>
   <div id="coLines"></div>
-  <div class="total"><span>Summe</span><span id="coSum"></span></div>
+  <div class="total"><span>Warenwert</span><span id="coSum"></span></div>
   <label>Name<input id="cn" autocomplete="name"></label>
   <label>E-Mail<input id="ce" type="email" autocomplete="email"></label>
   <label>Telefon (optional)<input id="cp" type="tel" autocomplete="tel"></label>
   <label>Straße und Hausnummer<input id="cs" autocomplete="street-address"></label>
   <div class="two"><label>PLZ<input id="cz" inputmode="numeric" autocomplete="postal-code"></label><label>Ort<input id="cc" autocomplete="address-level2"></label></div>
-  <label>Land<input id="cl" value="Österreich" autocomplete="country-name"></label>
+  <label>Land<select id="cl" autocomplete="country-name"><option value="Österreich">Österreich</option><option value="Deutschland">Deutschland</option></select></label>
+  <label>Lieferung<select id="delivery"><option value="shipping">Versand</option><option value="pickup">Abholung</option></select></label>
+  <label>Zahlungsart<select id="payment"><option value="bank_transfer">Vorkasse / Banküberweisung</option><option value="cash_pickup">Barzahlung bei Abholung</option></select></label>
+  <p id="shippingHint" aria-live="polite"></p>
   <label>Anmerkung (optional)<textarea id="cm" rows="2"></textarea></label>
   <p id="coErr" role="alert"></p>
   <input id="hp" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px">
-  <div id="coOut" hidden>
-    <p>Dein Mailprogramm sollte sich mit der fertigen Nachricht öffnen. Falls nicht: Text kopieren und an hatheierlukas@gmail.com schicken.</p>
-    <textarea id="coTxt" rows="6" readonly></textarea>
-    <div class="acts" style="margin-top:0;justify-content:flex-start"><button class="ghost" id="coCopy" type="button">Text kopieren</button><button class="ghost" id="coClear" type="button">Warenkorb leeren</button></div>
-  </div>
-  <div class="acts"><button class="ghost" id="coCancel" type="button">Abbrechen</button><button class="btn" id="coSend" type="button">Bestellung per E-Mail senden</button></div>
+  <div class="acts"><button class="ghost" id="coCancel" type="button">Abbrechen</button><button class="btn" id="coSend" type="button">Verbindlich bestellen</button></div>
 </dialog>
 
 <dialog id="mopDlg" aria-labelledby="mt">
@@ -185,13 +181,9 @@ input,textarea{width:100%;font:inherit;padding:.55rem .7rem;border:1px solid var
 </dialog>
 
 <dialog id="loginDlg" aria-labelledby="lt">
-  <h2 id="lt">Admin-Login</h2>
-  <form id="loginForm">
-    <label>Benutzername<input id="lu" autocomplete="username"></label>
-    <label>Passwort<input id="lp" type="password" autocomplete="current-password"></label>
-    <p id="lerr" role="alert"></p>
-    <div class="acts"><button class="ghost" type="button" id="lcancel">Abbrechen</button><button class="add" type="submit">Anmelden</button></div>
-  </form>
+  <h2 id="lt">Admin-Anmeldung nicht verfügbar</h2>
+  <p id="lerr" role="status">Die sichere Google-Anmeldung für das Administratorkonto ist noch nicht eingerichtet.</p>
+  <div class="acts"><button class="ghost" type="button" id="lcancel">Schließen</button></div>
 </dialog>
 
 <dialog id="prodDlg" aria-labelledby="pt">
@@ -221,20 +213,31 @@ const SEED=[
   {name:"Mini-LED-Blinker + Mini-Rücklicht",price:49.9,img:IMG.halter},
   {name:"Mini-Blinker + Original-Rücklicht",price:44.9,img:IMG.halter},
   {name:"Original-Blinker + Original-Rücklicht",price:29.9,img:IMG.halter}],fits:["beta-rr50"]},
- {id:"bezug",name:"Guts Sitzbankbezug, universalpassend",desc:"Sitzbankbezug für Mopeds und Motorräder, passt universal.",variants:[{name:"Universal",price:24.9,img:""}],fits:["*"]}
+ {id:"bezug",name:"Guts Sitzbankbezug, universalpassend",desc:"Sitzbankbezug für Mopeds und Motorräder, passt universal.",variants:[{name:"Universal",price:24.9,img:""}],fits:["*"]},
+ {id:"thermometer",name:"Digitales Motorrad-Thermometer mit Sensor",desc:"Digitalanzeige mit Temperaturfühler. Fahrzeugkompatibilität und Einbau vor Bestellung prüfen.",fits:[],fitmentConfirmed:false,active:false,variants:[{sku:"RW-THERMOMETER-RED",name:"Rotes Display",price:null,img:"/images/thermometer-red.jpg"},{sku:"RW-THERMOMETER-BLUE",name:"Blaues Display",price:null,img:"/images/thermometer-blue.jpg"}]},
+ {id:"usb-charger",name:"USB-Ladegerät für den Lenker",desc:"12-V-Ladegerät für die Montage am Lenker. Spannung, Absicherung und Fahrzeugkompatibilität vor Einbau prüfen.",fits:[],fitmentConfirmed:false,active:false,variants:[{sku:"RW-USB-CHARGER-1",name:"USB-Ladegerät",price:null,img:""}]},
+ {id:"usb-outlet",name:"12-V-Steckdose fürs Moped",desc:"Zusätzliche 12-V-Steckdose. Anschluss, Absicherung und Fahrzeugkompatibilität vor Einbau prüfen.",fits:[],fitmentConfirmed:false,active:false,variants:[{sku:"RW-USB-OUTLET-1",name:"12-V-Steckdose",price:null,img:""}]},
+ {id:"phone-holder",name:"Lenker-Handyhalterung",desc:"Halterung zur Montage am Lenker. Lenkerdurchmesser und sichere Befestigung vor Bestellung prüfen.",fits:[],fitmentConfirmed:false,active:false,variants:[{sku:"RW-PHONE-HOLDER-1",name:"Schwarz",price:null,img:""}]},
+ {id:"led-indicators",name:"LED-Blinker-Set",desc:"Paar LED-Blinker. Elektrische Kompatibilität, Widerstand und Zulassung für das Fahrzeug vor Einbau prüfen.",fits:[],fitmentConfirmed:false,active:false,variants:[{sku:"RW-LED-INDICATOR-PAIR",name:"Paar, schwarz",price:null,img:""}]},
+ {id:"tail-light",name:"LED-Rücklicht",desc:"LED-Rücklicht. Maße, Anschlussbelegung und Zulassung für das Fahrzeug vor Bestellung prüfen.",fits:[],fitmentConfirmed:false,active:false,variants:[{sku:"RW-LED-TAIL-LIGHT-1",name:"Rücklicht",price:null,img:""}]},
+ {id:"chain-lock",name:"Kettenschloss",desc:"Sicherungsschloss für Mopeds. Länge und Stärke werden nach Lieferantenauswahl ergänzt.",fits:[],fitmentConfirmed:false,active:false,variants:[{sku:"RW-CHAIN-LOCK-1",name:"Kettenschloss",price:null,img:""}]},
+ {id:"brake-lever",name:"Bremshebel",desc:"Ersatz-Bremshebel. Fahrzeugmodell, Hebelaufnahme und Ausführung vor Bestellung abgleichen.",fits:[],fitmentConfirmed:false,active:false,variants:[{sku:"RW-BRAKE-LEVER-1",name:"Bremshebel",price:null,img:""}]},
+ {id:"clutch-lever",name:"Kupplungshebel",desc:"Ersatz-Kupplungshebel. Fahrzeugmodell, Hebelaufnahme und Ausführung vor Bestellung abgleichen.",fits:[],fitmentConfirmed:false,active:false,variants:[{sku:"RW-CLUTCH-LEVER-1",name:"Kupplungshebel",price:null,img:""}]},
+ {id:"chain-brush",name:"Kettenreinigungsbürste",desc:"Bürste zur Reinigung der Antriebskette.",fits:[],fitmentConfirmed:false,active:false,variants:[{sku:"RW-CHAIN-BRUSH-1",name:"Reinigungsbürste",price:null,img:""}]},
+ {id:"tie-down-straps",name:"Spanngurte fürs Moped",desc:"Spanngurte zur Sicherung beim Transport. Traglast und Länge werden nach Lieferantenauswahl ergänzt.",fits:[],fitmentConfirmed:false,active:false,variants:[{sku:"RW-STRAP-PAIR-1",name:"Paar",price:null,img:""}]}
 ];
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const eur=n=>new Intl.NumberFormat("de-AT",{style:"currency",currency:"EUR"}).format(n);
-const src=u=>{u=u&&u[0]==="@"?IMG[u.slice(1)]:u;return /^(data:image\/|\/_blob\/)/.test(u||"")?u:PH;};
+const src=u=>{u=u&&u[0]==="@"?IMG[u.slice(1)]:u;return /^(data:image\/|\/_blob\/)/.test(u||"")||/^\/images\/thermometer-(red|blue)\.jpg$/.test(u||"")?u:PH;};
 const MOPEDS=[["beta-rr50","Beta RR 50"],["derbi-senda","Derbi Senda"],["rieju-mrt","Rieju MRT 50"],["aprilia-rx","Aprilia RX 50"],["aprilia-sx","Aprilia SX 50"],["yamaha-dt","Yamaha DT 50"],["yamaha-tzr","Yamaha TZR 50"],["gilera-smt","Gilera SMT 50"],["peugeot-xps","Peugeot XPS 50"],["sherco-sm","Sherco SM 50"],["ksr-tr","KSR TR 50"]];
-let remote=[],customMop=[],sel={},cart=[],db=null,admin=false,moped="";
+let remote=[],customMop=[],sel={},cart=[],db=null,admin=false,moped="",checkoutKey="";
 const mopeds=()=>[...MOPEDS,...customMop];
 const store=(k,v,sess)=>{try{const s=sess?sessionStorage:localStorage;v?s.setItem(k,v):s.removeItem(k);}catch{}};
-try{moped=localStorage.getItem("moped")||"";admin=sessionStorage.getItem("adm")==="1";}catch{}
+try{moped=localStorage.getItem("moped")||"";}catch{}
 const all=()=>{const m=new Map(SEED.map(p=>[p.id,p]));remote.forEach(p=>m.set(p.id,p));return[...m.values()].filter(p=>!p.deleted);};
 
-const shown=()=>all().filter(p=>!moped||(p.fits||["*"]).some(f=>f==="*"||f===moped));
+const shown=()=>all().filter(p=>p.fitmentConfirmed===false||!moped||(p.fits||["*"]).some(f=>f==="*"||f===moped));
 function render(){
   const list=shown(),mn=(mopeds().find(m=>m[0]===moped)||[])[1];
   drawMops();
@@ -242,8 +245,8 @@ function render(){
   $("#fbar").hidden=!moped;
   $("#ftxt").textContent=`Passende Produkte für ${mn||"dein Moped"}: ${list.length}`;
   $("#grid").innerHTML=!list.length?"<p>Für dieses Moped gibt es noch keine Produkte.</p>":list.map(p=>{
-    const many=p.variants.length>1,lo=Math.min(...p.variants.map(x=>x.price)),pre=p.variants.some(x=>x.price!==lo)?"ab ":"";
-    return `<article class="card"><div class="tile"><img src="${esc(src(p.variants[0].img))}" alt=""></div><div class="cardinfo"><h3><button class="open" data-open="${esc(p.id)}">${esc(p.name)}</button></h3><span class="price">${pre}${eur(lo)}</span>${many?`<small>${p.variants.length} Optionen</small>`:""}</div></article>`;
+    const many=p.variants.length>1,prices=p.variants.map(x=>x.price).filter(Number.isFinite),lo=prices.length?Math.min(...prices):null,pre=prices.length&&p.variants.some(x=>x.price!==lo)?"ab ":"";
+    return `<article class="card"><div class="tile"><img src="${esc(src(p.variants[0].img))}" alt="" loading="lazy"></div><div class="cardinfo"><h3><button class="open" data-open="${esc(p.id)}">${esc(p.name)}</button></h3><span class="price">${p.active!==false&&lo!==null?pre+eur(lo):"Preis folgt"}</span><small>${p.active===false?"Noch nicht bestellbar":many?`${p.variants.length} Optionen`:""}</small></div></article>`;
   }).join("");
   $("#feat").innerHTML=[...$("#grid").querySelectorAll(".card")].slice(0,4).map(c=>c.outerHTML).join("");
 }
@@ -255,11 +258,13 @@ function paintProd(){
   $("#pimg").innerHTML=`<img src="${esc(src(v.img))}" alt="${esc(p.name+(many?" – "+v.name:""))}">`;
   $("#pt").textContent=p.name;$("#ptext").textContent=p.desc;
   $("#popts").hidden=!many;
-  $("#popts").innerHTML=p.variants.map((x,j)=>`<button class="chip" aria-pressed="${j===i}" data-i="${j}">${esc(x.name)} (${eur(x.price)})</button>`).join("");
-  $("#pprice").textContent=eur(v.price);
+  $("#popts").innerHTML=p.variants.map((x,j)=>`<button class="chip" aria-pressed="${j===i}" data-i="${j}">${esc(x.name)}${p.active!==false&&Number.isFinite(x.price)?` (${eur(x.price)})`:""}</button>`).join("");
+  $("#pprice").textContent=p.active!==false&&Number.isFinite(v.price)?eur(v.price):"Preis folgt";
+  $("#padd").disabled=p.active===false||!Number.isFinite(v.price);
+  $("#padd").textContent=$("#padd").disabled?"Noch nicht verfügbar":"In den Warenkorb";
   $("#padm").hidden=!admin;
   const f=p.fits||["*"];
-  $("#pfit").textContent=f.includes("*")?"Passt für alle Mopeds":"Passt für: "+f.map(x=>(mopeds().find(m=>m[0]===x)||[,x])[1]).join(", ");
+  $("#pfit").textContent=p.fitmentConfirmed===false?"Fahrzeug-Kompatibilität nicht bestätigt – bitte vor Bestellung prüfen.":f.includes("*")?"Passt für alle Mopeds":"Passt für: "+f.map(x=>(mopeds().find(m=>m[0]===x)||[,x])[1]).join(", ");
 }
 $("#popts").onclick=e=>{const b=e.target.closest("button[data-i]");if(!b)return;sel[cur]=+b.dataset.i;paintProd();$("#popts").querySelector(`[data-i="${b.dataset.i}"]`)?.focus();};
 $("#padd").onclick=()=>{$("#prodDlg").close();addCart(cur);};
@@ -279,8 +284,10 @@ $("#pdel").onclick=async()=>{
 
 function toast(t){const el=$("#toast");el.textContent=t;if(!el.matches(":popover-open"))el.showPopover();clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidePopover(),2200);}
 function addCart(id){
-  const p=all().find(x=>x.id===id),i=Math.min(sel[id]||0,p.variants.length-1),v=p.variants[i],k=id+"|"+i,it=cart.find(c=>c.k===k);
-  it?it.q++:cart.push({k,n:p.name,v:p.variants.length>1?v.name:"",p:v.price,img:v.img,q:1});
+  const p=all().find(x=>x.id===id);if(!p||p.active===false)return;
+  const i=Math.min(sel[id]||0,p.variants.length-1),v=p.variants[i];if(!Number.isFinite(v.price))return;
+  const k=id+"|"+i,it=cart.find(c=>c.k===k);
+  it?it.q++:cart.push({k,n:p.name,v:p.variants.length>1?v.name:"",p:v.price,img:v.img,q:1,productId:p.id,sku:v.sku||("RW-"+p.id.toUpperCase()+"-"+(i+1))});
   drawCart();toast("Zum Warenkorb hinzugefügt");
 }
 function drawCart(){
@@ -291,36 +298,39 @@ function drawCart(){
 $("#lines").onclick=e=>{const b=e.target.closest("button[data-k]");if(!b)return;const it=cart.find(c=>c.k===b.dataset.k);it.q+=+b.dataset.d;if(it.q<1)cart=cart.filter(c=>c!==it);drawCart();};
 $("#cartBtn").onclick=()=>$("#cartDlg").showModal();
 $("#cartClose").onclick=()=>$("#cartDlg").close();
-const ORDER_ENDPOINT="/api/order",MAIL="hatheierlukas@gmail.com",sumCart=()=>cart.reduce((a,c)=>a+c.p*c.q,0);
+const ORDER_ENDPOINT="/api/order",sumCart=()=>cart.reduce((a,c)=>a+c.p*c.q,0);
+function updateCheckoutEstimate(){
+  const subtotal=sumCart(),country=$("#cl").value,delivery=$("#delivery").value;
+  const shipping=delivery==="pickup"||subtotal>=75?0:(country==="Deutschland"?7.9:4.9);
+  const method=delivery==="pickup"?"Abholung: keine Versandkosten.":`Versand: ${shipping?eur(shipping):"kostenfrei"} · Versandkostenfrei ab 75,00 € Warenwert.`;
+  $("#shippingHint").textContent=`${method} Voraussichtliche Summe: ${eur(subtotal+shipping)}.`;
+  if(delivery==="shipping"&&$("#payment").value==="cash_pickup")$("#payment").value="bank_transfer";
+  $("#payment").querySelector('[value="cash_pickup"]').disabled=delivery!=="pickup";
+}
 $("#checkout").onclick=()=>{
   if(!cart.length)return toast("Dein Warenkorb ist leer.");
   $("#cartDlg").close();
   $("#coLines").innerHTML=cart.map(c=>`<div class="co"><span>${c.q} × ${esc(c.n)}${c.v?" ("+esc(c.v)+")":""}</span><strong>${eur(c.p*c.q)}</strong></div>`).join("");
-  $("#coSum").textContent=eur(sumCart());$("#coErr").textContent="";$("#coOut").hidden=true;
+  $("#coSum").textContent=eur(sumCart());$("#coErr").textContent="";checkoutKey=crypto.randomUUID();updateCheckoutEstimate();
   $("#coDlg").showModal();
 };
 $("#coCancel").onclick=()=>$("#coDlg").close();
-$("#coSend").onclick=()=>{
+$("#cl").onchange=$("#delivery").onchange=updateCheckoutEstimate;
+$("#coSend").onclick=async()=>{
   const g=id=>$(id).value.trim(),f={n:g("#cn"),e:g("#ce"),t:g("#cp"),s:g("#cs"),z:g("#cz"),c:g("#cc"),l:g("#cl"),m:g("#cm")};
   if(!f.n||!f.s||!f.z||!f.c)return $("#coErr").textContent="Bitte gib deinen Namen und die vollständige Adresse an.";
   if(!/^\S+@\S+\.\S+$/.test(f.e))return $("#coErr").textContent="Bitte gib eine gültige E-Mail-Adresse an.";
   $("#coErr").textContent="";
-  const mn=(mopeds().find(m=>m[0]===moped)||[])[1],subj="Neue Bestellung von "+f.n;
-  const body=["Neue Bestellung über rideworks","","Produkte:",...cart.map(c=>`- ${c.q} × ${c.n}${c.v?" ("+c.v+")":""}: ${eur(c.p)} je Stück = ${eur(c.p*c.q)}`),"","Summe: "+eur(sumCart()),...(mn?["Moped: "+mn]:[]),"","Kontakt:","Name: "+f.n,"E-Mail: "+f.e,...(f.t?["Telefon: "+f.t]:[]),"","Lieferadresse:",f.s,f.z+" "+f.c,f.l,...(f.m?["","Anmerkung: "+f.m]:[])].join("\r\n");
-  const payload={customer:{name:f.n,email:f.e,phone:f.t,street:f.s,zip:f.z,city:f.c,country:f.l,note:f.m},moped:mn||"",items:cart.map(c=>({name:c.n,variant:c.v,qty:c.q,price:c.p})),website:$("#hp").value};
-  const viaMail=()=>{
-    $("#coTxt").value="Betreff: "+subj+"\r\n\r\n"+body;$("#coOut").hidden=false;
-    const a=document.createElement("a");a.href="mailto:"+MAIL+"?subject="+encodeURIComponent(subj)+"&body="+encodeURIComponent(body);a.click();
-  };
-  if(!ORDER_ENDPOINT)return viaMail();
+  const payload={customer:{name:f.n,email:f.e,phone:f.t,street:f.s,zip:f.z,city:f.c,country:f.l,note:f.m},items:cart.map(c=>({productId:c.productId,sku:c.sku,qty:c.q})),deliveryMethod:$("#delivery").value,paymentMethod:$("#payment").value,website:$("#hp").value};
   const btn=$("#coSend");btn.disabled=true;
-  fetch(ORDER_ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)})
-    .then(r=>{if(!r.ok)throw new Error(r.status);cart=[];drawCart();$("#coDlg").close();toast("Bestellung gesendet. Danke!");})
-    .catch(()=>{toast("Senden hat nicht geklappt. Wir öffnen dein Mailprogramm.");viaMail();})
-    .finally(()=>{btn.disabled=false;});
+  try{
+    const response=await fetch(ORDER_ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json","Idempotency-Key":checkoutKey},body:JSON.stringify(payload)});
+    const result=await response.json();
+    if(!response.ok)throw new Error(result.error||"Bestellung konnte nicht abgeschlossen werden.");
+    cart=[];drawCart();$("#coDlg").close();checkoutKey="";toast(result.message||"Bestellung gespeichert.");
+  }catch(error){$("#coErr").textContent=error.message||"Bestellung konnte nicht abgeschlossen werden. Bitte versuche es erneut.";}
+  finally{btn.disabled=false;}
 };
-$("#coCopy").onclick=async()=>{const t=$("#coTxt");try{await navigator.clipboard.writeText(t.value);toast("Text kopiert");}catch{t.select();toast("Text markiert, bitte kopieren");}};
-$("#coClear").onclick=()=>{cart=[];drawCart();$("#coDlg").close();};
 
 const shrink=f=>new Promise((ok,no)=>{const u=URL.createObjectURL(f),i=new Image();i.onload=()=>{const s=Math.min(1,480/Math.max(i.width,i.height)),c=document.createElement("canvas");c.width=Math.round(i.width*s);c.height=Math.round(i.height*s);const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);x.drawImage(i,0,0,c.width,c.height);URL.revokeObjectURL(u);ok(c.toDataURL("image/jpeg",.72));};i.onerror=no;i.src=u;});
 const err=t=>$("#err").textContent=t||"";
@@ -366,10 +376,9 @@ $("#save").onclick=async()=>{
 };
 
 const valid=p=>p&&(p.deleted||(typeof p.name==="string"&&Array.isArray(p.variants)&&p.variants.length&&p.variants.every(v=>v&&Number.isFinite(v.price))));
-function setAdmin(v){admin=v;store("adm",v?"1":"",true);$("#addBtn").hidden=!v;$("#loginBtn").textContent=v?"Abmelden":"Login";}
-$("#loginBtn").onclick=()=>{if(admin){setAdmin(false);toast("Abgemeldet");return;}$("#lu").value="";$("#lp").value="";$("#lerr").textContent="";$("#loginDlg").showModal();};
+function setAdmin(){admin=false;store("adm","",true);$("#addBtn").hidden=true;$("#loginBtn").textContent="Admin-Login";}
+$("#loginBtn").onclick=()=>$("#loginDlg").showModal();
 $("#lcancel").onclick=()=>$("#loginDlg").close();
-$("#loginForm").onsubmit=e=>{e.preventDefault();if($("#lu").value.trim()==="admin"&&$("#lp").value==="1234"){setAdmin(true);$("#loginDlg").close();toast("Angemeldet als Admin");}else $("#lerr").textContent="Benutzername oder Passwort stimmt nicht.";};
 function drawMops(){const h=mopeds().map(([id,n])=>`<button class="chip" aria-pressed="${id===moped}" data-m="${esc(id)}">${esc(n)}</button>`).join("");$("#mopList").innerHTML=h;$("#startMops").innerHTML=h;}
 function pickMop(id){moped=id;store("moped",id);render();}
 $("#mopBtn").onclick=()=>{drawMops();$("#newMop").hidden=!admin;$("#mopDlg").showModal();};
@@ -387,7 +396,7 @@ function route(){
 }
 addEventListener("hashchange",route);
 document.querySelectorAll("img.lg").forEach(i=>i.src=LOGO);
-setAdmin(admin);render();drawCart();route();
+setAdmin(false);render();drawCart();route();
 (async()=>{
   try{
     if(!window.claude?.use)return;
