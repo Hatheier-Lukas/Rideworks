@@ -95,6 +95,7 @@ h3{font:700 1.45rem/1.1 "Barlow Condensed",sans-serif;margin:0}
 .relay-specs th,.relay-specs td{padding:.65rem .2rem;text-align:left;vertical-align:top}
 .relay-specs th{width:43%;padding-right:.7rem;color:#fff;font-weight:700}
 .relay-specs td{color:#b7b7b7}
+.relay-details--table-only{grid-template-columns:minmax(0,1fr)}
 @media(max-width:767px){
   .product-page{padding:.75rem 0 1.5rem}
   .product-page .bar{align-items:stretch;gap:.75rem}
@@ -236,7 +237,7 @@ input,textarea{width:100%;font:inherit;padding:.55rem .7rem;border:1px solid var
       </div>
     </div>
     <section id="relayDetails" class="relay-details" hidden aria-label="Produktbeschreibung und technische Details zum LED-Blinkrelais">
-      <div class="relay-accordion">
+      <div class="relay-accordion" id="relayAccordion">
         <details open>
           <summary>Beschreibung</summary>
           <div class="relay-content">
@@ -304,22 +305,7 @@ input,textarea{width:100%;font:inherit;padding:.55rem .7rem;border:1px solid var
         <h3 id="relayTechnicalHeading">Technische Details</h3>
         <h4 id="relaySpecName">12V LED-Blinkrelais mit einstellbarer Geschwindigkeit</h4>
         <table class="relay-specs">
-          <tbody>
-            <tr><th scope="row">Artikel-Nr.</th><td id="relaySpecSku">RW-RELAIS-1</td></tr>
-            <tr><th scope="row">Marke / Hersteller</th><td>Nicht angegeben</td></tr>
-            <tr><th scope="row">Produkttyp</th><td>LED-Blinkrelais</td></tr>
-            <tr><th scope="row">Tuningbereich</th><td>Elektrik / Blinktechnik</td></tr>
-            <tr><th scope="row">Homologation / E-Prüfzeichen</th><td>Nicht angegeben; vor Verwendung prüfen</td></tr>
-            <tr><th scope="row">Spannung</th><td>12 V</td></tr>
-            <tr><th scope="row">Blinkfrequenz</th><td>Einstellbar, 50–200 Zyklen/Minute</td></tr>
-            <tr><th scope="row">Angegebene Last</th><td>21 W × 2 + 3,4 W; nicht näher spezifiziert</td></tr>
-            <tr><th scope="row">Farbe</th><td>Nicht angegeben</td></tr>
-            <tr><th scope="row">Material</th><td>Nicht angegeben</td></tr>
-            <tr><th scope="row">Glasfarbe</th><td>Nicht zutreffend</td></tr>
-            <tr><th scope="row">Gewinde / Anschluss</th><td>Gewinde nicht zutreffend; 2-polig, Steckertyp und Pinbelegung nicht angegeben</td></tr>
-            <tr><th scope="row">Gewicht</th><td>Nicht angegeben</td></tr>
-            <tr><th scope="row">Passform</th><td>Im Katalog als universal geführt; elektrische Kompatibilität prüfen</td></tr>
-          </tbody>
+          <tbody id="relaySpecRows"></tbody>
         </table>
       </aside>
     </section>
@@ -449,6 +435,23 @@ document.querySelector(".footer-links").addEventListener("click",event=>{
 $("#legalClose").onclick=()=>$("#legalDlg").close();
 const src=u=>{u=u&&u[0]==="@"?IMG[u.slice(1)]:u;return /^(data:image\/|\/_blob\/)/.test(u||"")||/^\/images\/[a-z0-9-]+\.(?:jpe?g|png|webp|svg)$/i.test(u||"")?u:PH;};
 const MOPEDS=[["beta-rr50","Beta RR 50"],["derbi-senda","Derbi Senda"],["rieju-mrt","Rieju MRT 50"],["aprilia-rx","Aprilia RX 50"],["aprilia-sx","Aprilia SX 50"],["yamaha-dt","Yamaha DT 50"],["yamaha-tzr","Yamaha TZR 50"],["gilera-smt","Gilera SMT 50"],["peugeot-xps","Peugeot XPS 50"],["sherco-sm","Sherco SM 50"],["ksr-tr","KSR TR 50"]];
+const TECHNICAL_META={
+  relais:{type:"LED-Blinkrelais",area:"Elektrik / Blinktechnik",voltage:"12 V",connection:"Gewinde nicht zutreffend; 2-polig, Steckertyp und Pinbelegung nicht angegeben",frequency:"Einstellbar, 50–200 Zyklen/Minute",load:"21 W × 2 + 3,4 W; nicht näher spezifiziert"},
+  spiegel:{type:"Lenker-Rückspiegel, Paar",area:"Sicht / Rückspiegel",color:"Schwarz",glassColor:"Nicht angegeben",hasLens:true,connection:"Klemmhalterung; Maße und Aufnahme nicht angegeben"},
+  halter:{type:"Kennzeichenhalter",area:"Heck / Kennzeichen"},
+  bezug:{type:"Sitzbankbezug",area:"Sitzbank / Verkleidung"},
+  thermometer:{type:"Digitales Motorrad-Thermometer mit Sensor",area:"Anzeige / Elektrik",displayColor:true},
+  "usb-charger":{type:"USB-Ladegerät für den Lenker",area:"Elektrik / Bordversorgung",voltage:"12 V"},
+  "usb-outlet":{type:"12-V-Steckdose",area:"Elektrik / Bordversorgung",voltage:"12 V"},
+  "phone-holder":{type:"Lenker-Handyhalterung",area:"Cockpit / Zubehör",color:"Schwarz"},
+  "led-indicators":{type:"LED-Blinker-Set",area:"Elektrik / Beleuchtung",color:"Schwarz",glassColor:"Nicht angegeben",hasLens:true},
+  "tail-light":{type:"LED-Rücklicht",area:"Elektrik / Beleuchtung",glassColor:"Nicht angegeben",hasLens:true},
+  "chain-lock":{type:"Kettenschloss",area:"Diebstahlschutz"},
+  "brake-lever":{type:"Ersatz-Bremshebel",area:"Bremsanlage",connection:"Hebelaufnahme nicht angegeben"},
+  "clutch-lever":{type:"Ersatz-Kupplungshebel",area:"Kupplung",connection:"Hebelaufnahme nicht angegeben"},
+  "chain-brush":{type:"Kettenreinigungsbürste",area:"Pflege / Wartung"},
+  "tie-down-straps":{type:"Spanngurte",area:"Transport / Ladungssicherung"}
+};
 let remote=[],customMop=[],sel={},cart=[],db=null,admin=false,backupOnly=false,localWritable=false,moped="",checkoutKey="";
 const mopeds=()=>[...MOPEDS,...customMop];
 const store=(k,v,sess)=>{try{const s=sess?sessionStorage:localStorage;v?s.setItem(k,v):s.removeItem(k);}catch{}};
@@ -470,6 +473,47 @@ function render(){
 }
 let cur=null;
 function openProduct(id){location.hash="#product/"+encodeURIComponent(id);}
+function renderTechnicalSpecs(product,variant){
+  const meta=TECHNICAL_META[product.id]||{};
+  const sourceText=`${product.name||""} ${product.description||product.desc||""}`;
+  const variantName=String(variant?.name||"");
+  const color=product.color||variant?.color||meta.color||
+    (meta.displayColor&&/rot/i.test(variantName)?"Rot (Display)":meta.displayColor&&/blau/i.test(variantName)?"Blau (Display)":/schwarz/i.test(`${variantName} ${sourceText}`)?"Schwarz":"Nicht angegeben");
+  const fits=Array.isArray(product.fits)?product.fits:[];
+  const fitment=product.fitmentConfirmed===false?"Nicht bestätigt":
+    fits.includes("*")?"Universal laut Produktdaten; technische Kompatibilität prüfen":
+    fits.length?fits.map(id=>(mopeds().find(item=>item[0]===id)||[,id])[1]).join(", "):"Nicht angegeben";
+  const voltage=product.voltage||meta.voltage||(/\b12\s*-?\s*V\b/i.test(sourceText)?"12 V":"Nicht angegeben");
+  const glassColor=product.glassColor||meta.glassColor||(meta.hasLens?"Nicht angegeben":"Nicht zutreffend");
+  const rows=[
+    ["Artikel-Nr.",variant?.sku||"Nicht angegeben"],
+    ["Ausführung",variantName||"Nicht angegeben"],
+    ["Marke / Hersteller",product.brand||product.manufacturer||"Nicht angegeben"],
+    ["Produkttyp",product.productType||meta.type||product.name||"Nicht angegeben"],
+    ["Tuningbereich",product.tuningArea||product.category||meta.area||"Nicht angegeben"],
+    ["Homologation / E-Prüfzeichen",product.homologation||product.eMark||"Nicht angegeben; Herstellerangaben prüfen"],
+    ["Spannung",voltage],
+    ["Farbe",color],
+    ["Material",product.material||"Nicht angegeben"],
+    ["Glasfarbe",glassColor],
+    ["Gewinde / Anschluss",product.threadOrConnection||product.connection||meta.connection||"Nicht angegeben"],
+    ["Gewicht",product.weight??"Nicht angegeben"],
+    ["Passform",fitment]
+  ];
+  if(meta.frequency)rows.push(["Blinkfrequenz",meta.frequency]);
+  if(meta.load)rows.push(["Angegebene Last",meta.load]);
+  const body=$("#relaySpecRows");
+  body.replaceChildren(...rows.map(([label,value])=>{
+    const row=document.createElement("tr");
+    const heading=document.createElement("th");
+    const cell=document.createElement("td");
+    heading.scope="row";
+    heading.textContent=label;
+    cell.textContent=String(value);
+    row.append(heading,cell);
+    return row;
+  }));
+}
 $("#grid").onclick=$("#feat").onclick=e=>{
   const edit=e.target.closest("button[data-edit]");
   if(edit&&admin){const p=all().find(x=>x.id===edit.dataset.edit);if(p)openForm(p);return;}
@@ -492,11 +536,12 @@ function paintProd(){
   $("#padm").hidden=!admin;
   const f=p.fits||["*"];
   $("#pfit").textContent=p.fitmentConfirmed===false?"Fahrzeug-Kompatibilität nicht bestätigt – bitte vor Bestellung prüfen.":f.includes("*")?"Passt für alle Mopeds":"Passt für: "+f.map(x=>(mopeds().find(m=>m[0]===x)||[,x])[1]).join(", ");
-  $("#relayDetails").hidden=p.id!=="relais";
-  if(p.id==="relais"){
-    $("#relaySpecName").textContent=p.name;
-    $("#relaySpecSku").textContent=v.sku||"Nicht angegeben";
-  }
+  const showRelayContent=p.id==="relais";
+  $("#relayDetails").hidden=false;
+  $("#relayDetails").classList.toggle("relay-details--table-only",!showRelayContent);
+  $("#relayAccordion").hidden=!showRelayContent;
+  $("#relaySpecName").textContent=p.name;
+  renderTechnicalSpecs(p,v);
 }
 $("#popts").onclick=e=>{const b=e.target.closest("button[data-i]");if(!b)return;sel[cur]=+b.dataset.i;paintProd();$("#popts").querySelector(`[data-i="${b.dataset.i}"]`)?.focus();};
 $("#padd").onclick=()=>addCart(cur);
