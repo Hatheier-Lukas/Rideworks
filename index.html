@@ -77,6 +77,16 @@ h3{font:700 1.45rem/1.1 "Barlow Condensed",sans-serif;margin:0}
 .relay-content p{margin:.75rem 0}
 .relay-content u{text-underline-offset:4px}
 .relay-content strong{color:#fff}
+.product-description p{margin:.5rem 0}
+.product-description p:first-child{margin-top:0}
+.product-description p:last-child{margin-bottom:0}
+.product-description ul{margin:.35rem 0;padding-left:1.35rem}
+.product-description li{margin:.2rem 0}
+.product-description u{text-underline-offset:3px}
+.description-tools{display:flex;flex-wrap:wrap;gap:.4rem;margin:.5rem 0}
+.description-preview{min-height:3rem;padding:.8rem;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--muted)}
+.description-preview:empty::before{content:"Deine formatierte Beschreibung erscheint hier als Vorschau.";color:var(--muted)}
+.description-preview ul{padding-left:1.35rem}
 .relay-list{margin:.5rem 0 1.1rem;padding-left:1.3rem}
 .relay-list li{margin:.45rem 0}
 .relay-list li::marker{color:var(--relay-accent)}
@@ -284,7 +294,7 @@ input,textarea{width:100%;font:inherit;padding:.55rem .7rem;border:1px solid var
       <div class="tile" id="pimg"></div>
       <div class="info">
         <h2 id="pt"></h2>
-        <p id="ptext"></p>
+        <div id="ptext" class="product-description"></div>
         <p id="pfit"></p>
         <div class="opts" id="popts" role="group" aria-label="Variante wählen"></div>
         <div class="buy"><span class="price" id="pprice"></span><button class="add" id="padd">In den Warenkorb</button></div>
@@ -433,7 +443,16 @@ input,textarea{width:100%;font:inherit;padding:.55rem .7rem;border:1px solid var
 <dialog id="addDlg" aria-labelledby="at">
   <h2 id="at">Produkt hinzufügen</h2>
   <label>Produktname<input id="pn" autocomplete="off"></label>
-  <label>Beschreibung<textarea id="pd" rows="3"></textarea></label>
+  <label>Beschreibung<textarea id="pd" rows="8" maxlength="2000" aria-describedby="descriptionHelp"></textarea></label>
+  <p id="descriptionHelp" class="muted">Schreibe den Text selbst und markiere Überschriften, wichtige Wörter und Stichpunkte mit den Werkzeugen.</p>
+  <div class="description-tools" role="toolbar" aria-label="Beschreibung formatieren">
+    <button class="ghost" type="button" data-description-format="bold"><strong>Fett</strong></button>
+    <button class="ghost" type="button" data-description-format="underline"><u>Unterstreichen</u></button>
+    <button class="ghost" type="button" data-description-format="section">Abschnittsüberschrift</button>
+    <button class="ghost" type="button" data-description-format="bullet">• Stichpunkt</button>
+  </div>
+  <h3>Vorschau</h3>
+  <div id="descriptionPreview" class="description-preview product-description" aria-live="polite"></div>
   <fieldset class="tech-editor">
     <legend>Technische Details</legend>
     <p>Diese Werte erscheinen in der technischen Produkttabelle. Artikelnummer, Variante und Passform werden über die Varianten- und Fahrzeugfelder gepflegt.</p>
@@ -710,6 +729,61 @@ function render(){
 }
 let cur=null;
 function openProduct(id){location.hash="#product/"+encodeURIComponent(id);}
+function escapeDescriptionText(value){
+  return String(value).replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
+}
+function formatDescriptionInline(value){
+  return escapeDescriptionText(value)
+    .replace(/\*\*([^*\n]+)\*\*/g,"<strong>$1</strong>")
+    .replace(/&lt;u&gt;([\s\S]*?)&lt;\/u&gt;/gi,"<u>$1</u>");
+}
+function renderProductDescription(value){
+  const lines=String(value||"").replace(/\r\n?/g,"\n").trim().split("\n");
+  const blocks=[];let paragraph=[],bullets=[];
+  const flushParagraph=()=>{if(paragraph.length){blocks.push(`<p>${paragraph.map(formatDescriptionInline).join("<br>")}</p>`);paragraph=[];}};
+  const flushBullets=()=>{if(bullets.length){blocks.push(`<ul>${bullets.map(item=>`<li>${formatDescriptionInline(item)}</li>`).join("")}</ul>`);bullets=[];}};
+  for(const line of lines){
+    const bullet=line.match(/^\s*•\s?(.*)$/);
+    if(bullet){flushParagraph();bullets.push(bullet[1]);continue;}
+    if(!line.trim()){flushParagraph();flushBullets();continue;}
+    flushBullets();paragraph.push(line);
+  }
+  flushParagraph();flushBullets();
+  return blocks.join("");
+}
+function updateDescriptionPreview(){
+  $("#descriptionPreview").innerHTML=renderProductDescription($("#pd").value);
+}
+function formatDescriptionSelection(format){
+  const textarea=$("#pd"),start=textarea.selectionStart,end=textarea.selectionEnd;
+  const selected=textarea.value.slice(start,end);
+  if(format==="bullet"){
+    const lineStart=textarea.value.lastIndexOf("\n",Math.max(0,start-1))+1;
+    const lineEnd=textarea.value.indexOf("\n",end);
+    const actualEnd=lineEnd<0?textarea.value.length:lineEnd;
+    const block=textarea.value.slice(lineStart,actualEnd);
+    const replacement=block
+      ?block.split("\n").map(line=>line.trim()?`• ${line.replace(/^\s*•\s?/,"")}`:line).join("\n")
+      :"• ";
+    textarea.setRangeText(replacement,lineStart,actualEnd,"end");
+    textarea.focus();updateDescriptionPreview();return;
+  }
+  const formats={
+    bold:["**","**"],
+    underline:["<u>","</u>"],
+    section:["<u>**","**</u>\n\n"]
+  };
+  const [before,after]=formats[format]||formats.bold;
+  const content=selected||"Text";
+  textarea.setRangeText(`${before}${content}${after}`,start,end,"select");
+  textarea.focus();
+  if(!selected)textarea.setSelectionRange(start+before.length,start+before.length+content.length);
+  updateDescriptionPreview();
+}
+document.querySelectorAll("[data-description-format]").forEach(button=>{
+  button.addEventListener("click",()=>formatDescriptionSelection(button.dataset.descriptionFormat));
+});
+$("#pd").addEventListener("input",updateDescriptionPreview);
 function technicalValues(product,variant){
   const meta=TECHNICAL_META[product.id]||{};
   const saved=product.technicalDetails&&typeof product.technicalDetails==="object"?product.technicalDetails:{};
@@ -793,7 +867,7 @@ function paintProd(){
   sel[p.id]=i;
   const v=p.variants[i],many=p.variants.length>1;
   $("#pimg").innerHTML=`<img src="${esc(src(v.img||v.image))}" alt="${esc(p.name+(many?" – "+v.name:""))}">`;
-  $("#pt").textContent=p.name;$("#ptext").textContent=p.description||p.desc||"";
+  $("#pt").textContent=p.name;$("#ptext").innerHTML=renderProductDescription(p.description||p.desc||"");
   $("#popts").hidden=!many;
   $("#popts").innerHTML=p.variants.map((x,j)=>`<button class="chip" type="button" aria-pressed="${j===i}" data-i="${j}">${esc(x.name)}${x.active!==false&&Number.isFinite(x.price)?x.stock===0?" – Ausverkauft":` (${eur(x.price)})`:" – Preis folgt"}</button>`).join("");
   $("#pprice").textContent=p.active!==false&&v.active!==false&&Number.isFinite(v.price)?eur(v.price):"Preis folgt";
@@ -963,6 +1037,7 @@ function openForm(p){
   editId=p?p.id:null;
   $("#at").textContent=p?"Produkt bearbeiten":"Produkt hinzufügen";
   $("#pn").value=p?p.name:"";$("#pd").value=p?p.description||p.desc||"":"";
+  updateDescriptionPreview();
   const technical=technicalValues(p||{},p?.variants?.[sel[p.id]||0]||p?.variants?.[0]);
   $("#brand").value=technical.brand;
   $("#techType").value=technical.productType;

@@ -36,6 +36,12 @@ test("validates and cleans editable technical product details", () => {
   assert.equal(result.variants[0].image, "https://images.example.com/product.jpg");
 });
 
+test("preserves safe description formatting and paragraph breaks", () => {
+  const description = "<u>Produktmerkmale</u>\n\n• **Form:** Kompakt\n• Material: Kunststoff\n\nMontage vor dem Kauf prüfen.";
+  const result = validateProduct({ ...product, description });
+  assert.equal(result.description, description);
+});
+
 test("rejects invalid or oversized editable technical details", () => {
   assert.throws(() => validateProduct({
     ...product,

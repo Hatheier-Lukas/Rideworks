@@ -26,6 +26,16 @@ function cleanText(value, max) {
   return value.replace(/[\r\n\t]+/g, " ").trim().slice(0, max);
 }
 
+function cleanDescription(value, max) {
+  if (typeof value !== "string") return "";
+  return value
+    .replace(/\r\n?/g, "\n")
+    .replace(/[\t\f\v]+/g, " ")
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "")
+    .trim()
+    .slice(0, max);
+}
+
 function validateTechnicalDetails(value) {
   if (value === undefined || value === null) return {};
   if (typeof value !== "object" || Array.isArray(value)) {
@@ -130,7 +140,7 @@ export function validateProduct(body) {
   return {
     id: cleanText(body.id || "", 100) || `p-${randomUUID()}`,
     name,
-    description: cleanText(body.description || "", 2000),
+    description: cleanDescription(body.description || "", 2000),
     category: cleanText(body.category || "", 100),
     subcategory: cleanText(body.subcategory || "", 100),
     compatibility: cleanText(body.compatibility || "", 500),
