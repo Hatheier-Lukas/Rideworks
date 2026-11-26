@@ -786,13 +786,16 @@ $("#grid").onclick=$("#feat").onclick=e=>{
 function paintProd(){
   const p=all().find(x=>x.id===cur);if(!p)return;
   const available=p.variants.map((variant,index)=>({variant,index})).filter(({variant})=>variant.active!==false&&Number.isFinite(variant.price));
-  const selected=available.find(({index})=>index===(sel[p.id]||0))||available[0]||{variant:p.variants[0],index:0};
-  sel[p.id]=selected.index;
-  const i=selected.index,v=selected.variant,many=p.variants.length>1;
+  const requestedIndex=sel[p.id];
+  const i=Number.isInteger(requestedIndex)&&requestedIndex>=0&&requestedIndex<p.variants.length
+    ?requestedIndex
+    :available[0]?.index??0;
+  sel[p.id]=i;
+  const v=p.variants[i],many=p.variants.length>1;
   $("#pimg").innerHTML=`<img src="${esc(src(v.img||v.image))}" alt="${esc(p.name+(many?" – "+v.name:""))}">`;
   $("#pt").textContent=p.name;$("#ptext").textContent=p.description||p.desc||"";
   $("#popts").hidden=!many;
-  $("#popts").innerHTML=p.variants.map((x,j)=>`<button class="chip" aria-pressed="${j===i}" data-i="${j}"${x.active===false||!Number.isFinite(x.price)||x.stock===0?" disabled":""}>${esc(x.name)}${x.active!==false&&Number.isFinite(x.price)?` (${eur(x.price)})`:" – Preis folgt"}</button>`).join("");
+  $("#popts").innerHTML=p.variants.map((x,j)=>`<button class="chip" type="button" aria-pressed="${j===i}" data-i="${j}">${esc(x.name)}${x.active!==false&&Number.isFinite(x.price)?x.stock===0?" – Ausverkauft":` (${eur(x.price)})`:" – Preis folgt"}</button>`).join("");
   $("#pprice").textContent=p.active!==false&&v.active!==false&&Number.isFinite(v.price)?eur(v.price):"Preis folgt";
   $("#padd").disabled=p.active===false||v.active===false||!Number.isFinite(v.price)||v.stock===0;
   $("#padd").textContent=v.stock===0?"Ausverkauft":$("#padd").disabled?"Noch nicht verfügbar":"In den Warenkorb";
